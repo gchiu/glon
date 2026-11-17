@@ -1,0 +1,15 @@
+{
+  "repository": "https://github.com/gchiu/rebol-substrate-experiment",
+  "commit": "89de40e737b022a0d987093bb6c5b1e8d1a8a83e",
+  "branch": "glon-shop-g1a",
+  "build": "make glon",
+  "documentation": {
+    "language_reference": "https://gchiu.github.io/rebol-substrate-experiment/language/",
+    "grammar": "https://gchiu.github.io/rebol-substrate-experiment/grammar/",
+    "laws": "https://gchiu.github.io/rebol-substrate-experiment/language/laws.md",
+    "specification": "https://gchiu.github.io/rebol-substrate-experiment/language/spec.md",
+    "evaluation": "https://gchiu.github.io/rebol-substrate-experiment/language/evaluation.md",
+    "host_abi": "https://gchiu.github.io/rebol-substrate-experiment/language/host-abi.md",
+    "ai_authoring": "https://gchiu.github.io/rebol-substrate-experiment/language/ai-authoring.md"
+  }
+}

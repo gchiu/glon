@@ -1,0 +1,26 @@
+;; gcd.glon -- Euclidean greatest common divisor by repeated subtraction.
+;;
+;; Contract: a and b are nonnegative integers.
+;; Returns the greatest common divisor of a and b.
+;;
+;; This is ordinary Glon: func, either, =, >, -, and recursion.
+;; It adds no primitive and does not change the interpreter.
+gcd: func [a b] [
+    either = b 0 [
+        a
+    ] [
+        either = a 0 [
+            b
+        ] [
+            either = a b [
+                a
+            ] [
+                either > a b [
+                    gcd - a b b
+                ] [
+                    gcd a - b a
+                ]
+            ]
+        ]
+    ]
+]

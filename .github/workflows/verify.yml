@@ -1,0 +1,50 @@
+name: Verify Glon challenges
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout challenge repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Read pinned interpreter commit
+        id: interpreter
+        run: |
+          echo "commit=$(python3 -c 'import json; print(json.load(open("interpreter.json"))["commit"])')" >> "$GITHUB_OUTPUT"
+
+      - name: Build pinned Glon interpreter
+        run: scripts/build-interpreter.sh "${{ steps.interpreter.outputs.commit }}" "$RUNNER_TEMP/glon-eng"
+
+      - name: Run challenge cases and resource probes
+        run: |
+          python3 scripts/run-challenges.py \
+            --glon "$RUNNER_TEMP/glon-eng/glon" \
+            --output results \
+            --run-probes
+
+      - name: Build verified static site
+        run: |
+          python3 scripts/build-site.py \
+            --results results \
+            --out _site \
+            --require-pass
+
+      - name: Upload verification results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: challenge-results
+          path: results

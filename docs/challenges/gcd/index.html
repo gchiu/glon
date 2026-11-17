@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Greatest Common Divisor — Glon Challenge</title>
+<style>
+:root {
+  --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+  --accent:#2456a6; --ok:#1b6b42; --bad:#8b2f22; --code:#20262e;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --ok:#7ad6a2; --bad:#ff9b8d; --code:#242a32; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:980px; padding:1.6rem 16px 4rem; background:var(--bg); color:var(--fg);
+       font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .35rem; }
+h2 { font-size:clamp(1.2rem,3vw,1.5rem); margin:2.3rem 0 .6rem; }
+h3 { font-size:1.05rem; margin:0 0 .3rem; }
+p { margin:.5rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.7rem 0; border-bottom:1px solid var(--line); margin-bottom:1.5rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover { color:var(--accent); text-decoration:underline; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.85rem; margin:.8rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card p:last-child { margin-bottom:0; }
+.status { display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.04em;
+          border-radius:999px; padding:.12rem .55rem; border:1px solid var(--line); }
+.status.pass { color:var(--ok); background:color-mix(in srgb,var(--ok) 10%,transparent); }
+.status.fail { color:var(--bad); background:color-mix(in srgb,var(--bad) 10%,transparent); }
+.meta { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.6rem 1.2rem;
+        margin:.7rem 0; padding:.8rem 1rem; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.meta div { min-width:0; }
+.meta strong { display:block; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+table { border-collapse:collapse; width:100%; margin:.7rem 0 1rem; font-size:.9rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .5rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+td pre { margin:0; padding:.35rem .45rem; font-size:.82rem; }
+tr.pass td:last-child { color:var(--ok); font-weight:600; }
+tr.fail td:last-child { color:var(--bad); font-weight:600; }
+ul { padding-left:1.2rem; }
+li { margin:.25rem 0; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); font-size:.85rem; color:var(--muted); }
+@media (max-width:560px) { body { padding:1rem 14px 3rem; } .topnav { align-items:flex-start; } pre { white-space:pre-wrap; overflow-wrap:anywhere; } }
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Primary navigation">
+  <a class="brand" href="../../index.html">Glon Challenges</a>
+  <div class="navlinks">
+    <a href="../../index.html">Challenges</a>
+    <a href="../../index.html#verification">Verification</a>
+  </div>
+</nav>
+
+<main>
+  <p class="muted"><a href="../../index.html">Challenge index</a> / gcd</p>
+  <h1>Greatest Common Divisor</h1>
+  <p><span class="status pass">VERIFIED</span> <span class="muted">Verified with the pinned interpreter.</span></p>
+  <p>Compute the greatest common divisor of two nonnegative integers using Euclid&#x27;s algorithm. This first Glon implementation uses repeated subtraction.</p>
+  <p><strong>Attribution.</strong> Challenge family: REBOL Cookbook / Rosetta Code. Problem definition: Rosetta Code, &#x27;Greatest common divisor&#x27; (https://rosettacode.org/wiki/Greatest_common_divisor). The Glon implementation is original for this challenge.</p>
+  <div class="meta">
+    <div><strong>Interpreter commit</strong><code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></div>
+    <div><strong>Verification date</strong>2026-11-17T23:36:59Z</div>
+    <div><strong>Cases</strong>7 / 7 passed</div>
+    <div><strong>Domain</strong>Nonnegative integers only: a &gt;= 0 and b &gt;= 0.</div>
+  </div>
+  <p class="muted"><strong>Reference:</strong> Expected values are independent Euclidean GCD results, checked against the mathematical definition gcd(a,b) = largest positive integer dividing both; gcd(0,0) is defined here as 0 to match the recursion base case.</p>
+
+  <h2 id="source">Glon source</h2>
+  <pre><code>;; gcd.glon -- Euclidean greatest common divisor by repeated subtraction.
+;;
+;; Contract: a and b are nonnegative integers.
+;; Returns the greatest common divisor of a and b.
+;;
+;; This is ordinary Glon: func, either, =, &gt;, -, and recursion.
+;; It adds no primitive and does not change the interpreter.
+gcd: func [a b] [
+    either = b 0 [
+        a
+    ] [
+        either = a 0 [
+            b
+        ] [
+            either = a b [
+                a
+            ] [
+                either &gt; a b [
+                    gcd - a b b
+                ] [
+                    gcd a - b a
+                ]
+            ]
+        ]
+    ]
+]
+</code></pre>
+
+  <h2 id="results">Expected and actual results</h2>
+  <table>
+    <thead><tr><th>Case</th><th>Expected stdout</th><th>Actual stdout</th><th>Exit</th><th>Status</th></tr></thead>
+    <tbody><tr class='pass'><td><code>gcd-48-18</code></td><td><pre><code>6\n</code></pre></td><td><pre><code>6\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>gcd-1071-462</code></td><td><pre><code>21\n</code></pre></td><td><pre><code>21\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>gcd-17-13</code></td><td><pre><code>1\n</code></pre></td><td><pre><code>1\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>gcd-42-42</code></td><td><pre><code>42\n</code></pre></td><td><pre><code>42\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>gcd-42-0</code></td><td><pre><code>42\n</code></pre></td><td><pre><code>42\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>gcd-0-42</code></td><td><pre><code>42\n</code></pre></td><td><pre><code>42\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>gcd-0-0</code></td><td><pre><code>0\n</code></pre></td><td><pre><code>0\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr></tbody>
+  </table>
+
+  <h2 id="limits">Known limitations</h2>
+  <ul><li>Accepts nonnegative integers only. Negative inputs are outside the contract and are not tested.</li>
+<li>Subtractive Euclid uses one recursive call per subtraction. With the pinned 64K interpreter, gcd(73,1) succeeds while gcd(74,1) fail-stops with return-stack exhaustion.</li>
+<li>The fail-stop is a machine-level halt, not a SIN!, so judge cannot catch it.</li>
+<li>The recursion limit is an implementation resource limit; it is not worked around by changing the runtime in this challenge.</li></ul>
+
+  <h2 id="probes">Resource probes</h2><table><thead><tr><th>Probe</th><th>Call</th><th>Exit</th><th>Observed stdout / diagnostic</th></tr></thead><tbody><tr><td><code>gcd-73-1</code></td><td>gcd 73 1</td><td>0</td><td>1</td></tr><tr><td><code>gcd-74-1</code></td><td>gcd 74 1</td><td>1</td><td>glon: /tmp/glon-gcd-ck8u_ed1/probe-gcd-74-1.glon: ** halted (no SIN!: a machine-level fail-stop)</td></tr></tbody></table>
+
+  <h2 id="docs">Language documentation</h2>
+  <ul><li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/">Language reference</a></li>
+<li><a href="https://gchiu.github.io/rebol-substrate-experiment/grammar/">Grammar and railroad diagrams</a></li>
+<li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/laws.md">Alpha language laws</a></li>
+<li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/spec.md">Language specification</a></li>
+<li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/evaluation.md">Evaluation model</a></li>
+<li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/host-abi.md">Host ABI</a></li>
+<li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/ai-authoring.md">AI authoring guide</a></li></ul>
+  <p><a href="source.glon">Download challenge source</a> · <a href="results.json">Result JSON</a></p>
+</main>
+<footer>Results are generated from actual runs of the pinned native Glon interpreter. No result is fabricated or manually marked as passing.</footer>
+
+</body>
+</html>

@@ -1,0 +1,82 @@
+{
+  "schema": 1,
+  "challenge": "gcd",
+  "title": "Greatest Common Divisor",
+  "entry": "gcd",
+  "source": "gcd.glon",
+  "domain": "Nonnegative integers only: a >= 0 and b >= 0.",
+  "description": "Compute the greatest common divisor of two nonnegative integers using Euclid's algorithm. This first Glon implementation uses repeated subtraction.",
+  "attribution": "Challenge family: REBOL Cookbook / Rosetta Code. Problem definition: Rosetta Code, 'Greatest common divisor' (https://rosettacode.org/wiki/Greatest_common_divisor). The Glon implementation is original for this challenge.",
+  "reference": "Expected values are independent Euclidean GCD results, checked against the mathematical definition gcd(a,b) = largest positive integer dividing both; gcd(0,0) is defined here as 0 to match the recursion base case.",
+  "cases": [
+    {
+      "id": "gcd-48-18",
+      "call": "gcd 48 18",
+      "expected_exit": 0,
+      "expected_stdout": "6\n",
+      "reference": "gcd(48, 18) = 6"
+    },
+    {
+      "id": "gcd-1071-462",
+      "call": "gcd 1071 462",
+      "expected_exit": 0,
+      "expected_stdout": "21\n",
+      "reference": "gcd(1071, 462) = 21"
+    },
+    {
+      "id": "gcd-17-13",
+      "call": "gcd 17 13",
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "gcd(17, 13) = 1"
+    },
+    {
+      "id": "gcd-42-42",
+      "call": "gcd 42 42",
+      "expected_exit": 0,
+      "expected_stdout": "42\n",
+      "reference": "gcd(42, 42) = 42"
+    },
+    {
+      "id": "gcd-42-0",
+      "call": "gcd 42 0",
+      "expected_exit": 0,
+      "expected_stdout": "42\n",
+      "reference": "gcd(42, 0) = 42"
+    },
+    {
+      "id": "gcd-0-42",
+      "call": "gcd 0 42",
+      "expected_exit": 0,
+      "expected_stdout": "42\n",
+      "reference": "gcd(0, 42) = 42"
+    },
+    {
+      "id": "gcd-0-0",
+      "call": "gcd 0 0",
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "The implementation's base case returns 0 for gcd(0, 0)."
+    }
+  ],
+  "resource_probes": [
+    {
+      "id": "gcd-73-1",
+      "call": "gcd 73 1",
+      "observed": "exit 0, stdout 1",
+      "note": "Largest tested subtraction chain that completed on the pinned 64K interpreter."
+    },
+    {
+      "id": "gcd-74-1",
+      "call": "gcd 74 1",
+      "observed": "exit 1, machine halt: return-stack exhaustion",
+      "note": "Known implementation limit, not a catchable SIN!. The program needs one recursive call per subtraction."
+    }
+  ],
+  "known_limitations": [
+    "Accepts nonnegative integers only. Negative inputs are outside the contract and are not tested.",
+    "Subtractive Euclid uses one recursive call per subtraction. With the pinned 64K interpreter, gcd(73,1) succeeds while gcd(74,1) fail-stops with return-stack exhaustion.",
+    "The fail-stop is a machine-level halt, not a SIN!, so judge cannot catch it.",
+    "The recursion limit is an implementation resource limit; it is not worked around by changing the runtime in this challenge."
+  ]
+}
