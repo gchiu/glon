@@ -1,0 +1,97 @@
+{
+  "schema": 1,
+  "challenge": "file-replace",
+  "title": "File Text Replacement (partial)",
+  "entry": "replace-first",
+  "source": "replace.glon",
+  "libraries": [
+    "vendor/strings-ext.glon"
+  ],
+  "implementation_status": "partial",
+  "domain": "In-memory STRING! text only; no file read/write capability is available in the pinned native Glon CLI.",
+  "description": "Partial implementation of the REBOL 2 Cookbook file text replacement program. The in-memory first-occurrence replacement is implemented in Glon; the file read/write round trip is blocked by missing host I/O.",
+  "attribution": "Original REBOL 2 Cookbook recipe 'Replace Text in a File' by Carl Sassenrath (archived recipe linked in the reference source pane). The partial Glon implementation is original for this challenge.",
+  "reference": "REBOL replace changes only the first occurrence of the target string and leaves later occurrences unchanged. The six cases below test beginning, middle, end, no match, multiple matches and empty text.",
+  "blocker": "Complete file operation cannot be reproduced with the pinned native `glon` CLI and published vocabulary. The CLI has no file read/write words; the WASM host has no filesystem; the desktop GLON_LIVE proof exposes an asynchronous fs-read request/reply but no general Glon file-write binding. No host-side replacement or file processing is substituted.",
+  "host_dependency": "None available for complete operation. A future complete challenge would require documented Glon file read and write capabilities.",
+  "cases": [
+    {
+      "id": "beginning",
+      "call": "s/print replace-first \"web site\" \"web\" \"rebol\"",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "rebol site\n",
+      "reference": "First occurrence at the beginning."
+    },
+    {
+      "id": "middle",
+      "call": "s/print replace-first \"the web is wide\" \"web\" \"rebol\"",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "the rebol is wide\n",
+      "reference": "First occurrence in the middle."
+    },
+    {
+      "id": "end",
+      "call": "s/print replace-first \"the web\" \"web\" \"rebol\"",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "the rebol\n",
+      "reference": "First occurrence at the end."
+    },
+    {
+      "id": "no-match",
+      "call": "s/print replace-first \"the internet\" \"web\" \"rebol\"",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "the internet\n",
+      "reference": "No occurrence; text is unchanged."
+    },
+    {
+      "id": "multiple",
+      "call": "s/print replace-first \"web web web\" \"web\" \"rebol\"",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "rebol web web\n",
+      "reference": "Only the first of several occurrences changes."
+    },
+    {
+      "id": "empty",
+      "call": "s/print replace-first \"\" \"web\" \"rebol\"",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "\n",
+      "reference": "Empty file text remains empty; s/print adds a newline."
+    }
+  ],
+  "resource_probes": [],
+  "known_limitations": [
+    "Only the in-memory string replacement is implemented and tested. The original four-line REBOL program's file read/write round trip is not reproduced.",
+    "The pinned native glon CLI treats arguments as Glon source files and exposes no file I/O vocabulary.",
+    "The browser/WASM host has no filesystem. The desktop proof exposes fs-read but no general Glon file-write binding.",
+    "The partial implementation uses the published optional strings-ext library (s/slice) plus s/+, s/= and s/length. The vendored strings-ext.glon is an exact copy from the pinned upstream commit.",
+    "No C, Python, shell or host-side text replacement is used. No language or runtime extension was added.",
+    "An empty search pattern is outside this challenge's tested contract."
+  ],
+  "reference_implementation": {
+    "language": "REBOL 2",
+    "source": "reference.reb",
+    "title": "Replace Text in a File \u2014 original REBOL 2 Cookbook program",
+    "attribution": "Author: Carl Sassenrath. REBOL Cookbook, recipe 0004, 'Replace Text in a File'.",
+    "url": "https://web.archive.org/web/20250320233703/http://www.rebol.net/cookbook/recipes/0004.html",
+    "notes": "Reads %doc.txt, replaces the first occurrence of \"web\" with \"rebol\", and writes the modified contents back to the same file."
+  },
+  "implementation_comparison": {
+    "rebol": {
+      "observable_behaviour": "Reads %doc.txt, performs replace (first occurrence only), and writes the result back to %doc.txt.",
+      "facilities": "REBOL 2 built-in read, replace and write.",
+      "test_status": "Not executed here. The original listing is preserved as reference source only; no REBOL runtime was run."
+    },
+    "glon": {
+      "observable_behaviour": "Computes REBOL's first-occurrence replacement on an in-memory STRING!. Does not read or write a file.",
+      "facilities": "Existing string library s/+, s/= and s/length; optional strings-ext s/slice; no file I/O vocabulary.",
+      "test_status": "6/6 in-memory replacement cases executed and passed. Complete file round-trip not executable with the pinned native CLI."
+    },
+    "notice": "Source sizes are descriptive only. This is not a concision comparison: the REBOL program includes file I/O while the Glon implementation is a partial in-memory substitute."
+  }
+}

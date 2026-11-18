@@ -27,8 +27,11 @@ upstream Markdown and EBNF; it does not maintain divergent handwritten copies.
 |---|---|---|
 | [GCD](challenges/gcd/README.md) | Nonnegative integer subtraction Euclid | Verified |
 | [Factorial](challenges/factorial/README.md) | Recursive multiplication, 0!–19! | Verified; overflow at 20! |
+| [File Text Replacement](challenges/file-replace/README.md) | REBOL 2 Cookbook file replace, in-memory partial | Partial; file I/O blocked |
 
 Challenges are added one at a time and reviewed before the next is started.
+REBOL Cookbook challenges include the original `reference.reb` listing alongside
+the Glon source; the generated page compares their behaviour and limitations.
 
 ## Pinned interpreter
 
@@ -133,6 +136,32 @@ the interpreter commit. They are not fabricated from expected values.
 challenge result is fully passing. The publication workflow only deploys the
 generated artifact after that check succeeds, so a failed test cannot overwrite
 the last successfully published site.
+
+## REBOL Cookbook reference implementations
+
+For a REBOL Cookbook challenge, add the original program verbatim as
+`challenges/<name>/reference.reb` and add a `reference_implementation` object to
+`cases.json`:
+
+```json
+{
+  "reference_implementation": {
+    "language": "REBOL 2",
+    "source": "reference.reb",
+    "title": "Original recipe title",
+    "attribution": "Author and recipe attribution",
+    "url": "https://web.archive.org/.../archived-recipe.html",
+    "notes": "What the original program does"
+  }
+}
+```
+
+An optional `implementation_comparison` object supplies the observable
+behaviour, required facilities and test status for each language. The site
+generator displays the original and Glon listings side by side on desktop and
+stacked on mobile, adds both to the challenge page, and records source sizes
+without implying that the programs are equally concise or that the original
+program was executed. Every reference source must remain byte-for-byte verbatim.
 
 ## Challenge rules
 

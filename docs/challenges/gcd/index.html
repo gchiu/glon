@@ -7,11 +7,11 @@
 <style>
 :root {
   --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
-  --accent:#2456a6; --ok:#1b6b42; --bad:#8b2f22; --code:#20262e;
+  --accent:#2456a6; --ok:#1b6b42; --bad:#8b2f22; --warn:#8a4b12; --code:#20262e;
 }
 @media (prefers-color-scheme: dark) {
   :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
-          --accent:#8db1f2; --ok:#7ad6a2; --bad:#ff9b8d; --code:#242a32; }
+          --accent:#8db1f2; --ok:#7ad6a2; --bad:#ff9b8d; --warn:#ffbd7a; --code:#242a32; }
 }
 * { box-sizing:border-box; }
 html { scroll-behavior:smooth; }
@@ -33,6 +33,14 @@ pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1r
 .navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
 .navlinks a { color:var(--muted); text-decoration:none; }
 .navlinks a:hover { color:var(--accent); text-decoration:underline; }
+.code-compare { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:1rem; margin:1rem 0; }
+.code-pane { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; min-width:0; }
+.code-pane h3 { margin:0 0 .25rem; }
+.pane-meta { color:var(--muted); font-size:.85rem; margin:.25rem 0 .55rem; }
+.pane-meta a { font-weight:600; }
+.compare-table { margin-top:.8rem; }
+.notice { color:var(--muted); font-size:.9rem; margin:.6rem 0 1rem; }
+@media (max-width:760px) { .code-compare { grid-template-columns:1fr; } }
 .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.85rem; margin:.8rem 0; }
 .card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
 .card p:last-child { margin-bottom:0; }
@@ -40,6 +48,9 @@ pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1r
           border-radius:999px; padding:.12rem .55rem; border:1px solid var(--line); }
 .status.pass { color:var(--ok); background:color-mix(in srgb,var(--ok) 10%,transparent); }
 .status.fail { color:var(--bad); background:color-mix(in srgb,var(--bad) 10%,transparent); }
+.status.partial { color:var(--warn); background:color-mix(in srgb,var(--warn) 12%,transparent); }
+.callout { border:1px solid var(--line); border-left:4px solid var(--warn); border-radius:8px;
+           background:color-mix(in srgb,var(--warn) 7%,var(--panel)); padding:.8rem 1rem; margin:1rem 0; }
 .meta { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.6rem 1.2rem;
         margin:.7rem 0; padding:.8rem 1rem; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
 .meta div { min-width:0; }
@@ -70,19 +81,21 @@ footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); fo
 <main>
   <p class="muted"><a href="../../index.html">Challenge index</a> / gcd</p>
   <h1>Greatest Common Divisor</h1>
-  <p><span class="status pass">VERIFIED</span> <span class="muted">Verified with the pinned interpreter.</span></p>
+  <p><span class="status pass">VERIFIED</span> <span class="muted">Execution results verified with the pinned interpreter; status reflects the implemented scope.</span></p>
   <p>Compute the greatest common divisor of two nonnegative integers using Euclid&#x27;s algorithm. This first Glon implementation uses repeated subtraction.</p>
   <p><strong>Attribution.</strong> Challenge family: REBOL Cookbook / Rosetta Code. Problem definition: Rosetta Code, &#x27;Greatest common divisor&#x27; (https://rosettacode.org/wiki/Greatest_common_divisor). The Glon implementation is original for this challenge.</p>
+
+
+
   <div class="meta">
     <div><strong>Interpreter commit</strong><code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></div>
-    <div><strong>Verification date</strong>2026-11-18T00:14:03Z</div>
+    <div><strong>Verification date</strong>2026-11-18T02:00:25Z</div>
     <div><strong>Cases</strong>7 / 7 passed</div>
     <div><strong>Domain</strong>Nonnegative integers only: a &gt;= 0 and b &gt;= 0.</div>
   </div>
   <p class="muted"><strong>Reference:</strong> Expected values are independent Euclidean GCD results, checked against the mathematical definition gcd(a,b) = largest positive integer dividing both; gcd(0,0) is defined here as 0 to match the recursion base case.</p>
 
-  <h2 id="source">Glon source</h2>
-  <pre><code>;; gcd.glon -- Euclidean greatest common divisor by repeated subtraction.
+  <h2 id="source">Glon source</h2><div class="code-pane"><h3>Glon implementation</h3><p class="pane-meta"><a href="source.glon">Download Glon source</a> · 26 lines / 633 bytes</p><pre><code>;; gcd.glon -- Euclidean greatest common divisor by repeated subtraction.
 ;;
 ;; Contract: a and b are nonnegative integers.
 ;; Returns the greatest common divisor of a and b.
@@ -108,7 +121,8 @@ gcd: func [a b] [
         ]
     ]
 ]
-</code></pre>
+</code></pre></div>
+
 
   <h2 id="results">Expected and actual results</h2>
   <table>
@@ -122,7 +136,7 @@ gcd: func [a b] [
 <li>The fail-stop is a machine-level halt, not a SIN!, so judge cannot catch it.</li>
 <li>The recursion limit is an implementation resource limit; it is not worked around by changing the runtime in this challenge.</li></ul>
 
-  <h2 id="probes">Resource probes</h2><table><thead><tr><th>Probe</th><th>Call</th><th>Exit</th><th>Observed stdout / diagnostic</th></tr></thead><tbody><tr><td><code>gcd-73-1</code></td><td>gcd 73 1</td><td>0</td><td>1</td></tr><tr><td><code>gcd-74-1</code></td><td>gcd 74 1</td><td>1</td><td>glon: /tmp/glon-gcd-s8peo7rd/probe-gcd-74-1.glon: ** halted (no SIN!: a machine-level fail-stop)</td></tr></tbody></table>
+  <h2 id="probes">Resource probes</h2><table><thead><tr><th>Probe</th><th>Call</th><th>Exit</th><th>Observed stdout / diagnostic</th></tr></thead><tbody><tr><td><code>gcd-73-1</code></td><td>gcd 73 1</td><td>0</td><td>1</td></tr><tr><td><code>gcd-74-1</code></td><td>gcd 74 1</td><td>1</td><td>glon: /tmp/glon-gcd-6zas82_h/probe-gcd-74-1.glon: ** halted (no SIN!: a machine-level fail-stop)</td></tr></tbody></table>
 
   <h2 id="docs">Language documentation</h2>
   <ul><li><a href="https://gchiu.github.io/glon/language/">Language reference</a></li>

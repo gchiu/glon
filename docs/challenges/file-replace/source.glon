@@ -1,0 +1,31 @@
+;; replace.glon -- replace ONLY the first occurrence of `old` with `new`.
+;;
+;; PARTIAL CHALLENGE IMPLEMENTATION.
+;; This operates on an in-memory STRING! only. The published native Glon CLI
+;; and language vocabulary do not expose file read/write operations, so the
+;; original REBOL program's file round trip cannot be reproduced here.
+;;
+;; Requires the published optional strings-ext library (s/slice), loaded by the
+;; challenge runner from vendor/strings-ext.glon before this source.
+
+find-first: func [text pattern i text-len pat-len] [
+    either > + i pat-len text-len [
+        -1
+    ] [
+        either s/= s/slice text i pat-len pattern [
+            i
+        ] [
+            find-first text pattern + i 1 text-len pat-len
+        ]
+    ]
+]
+
+replace-first: func [text old new] [
+    index: find-first text old 0 s/length text s/length old
+    either = index -1 [
+        text
+    ] [
+        tail-start: + index s/length old
+        s/+ s/+ s/slice text 0 index new s/slice text tail-start - s/length text tail-start
+    ]
+]

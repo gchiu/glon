@@ -108,7 +108,12 @@ def classify(case: dict, observed: dict) -> str:
     return "pass"
 
 
-def run_case(glon: Path, source: str, case: dict, timeout: float, tmp: Path) -> dict:
+def program_text(library_prefix: str, source: str, call: str, print_value: bool) -> str:
+    statement = ("print " if print_value else "") + call.strip()
+    return library_prefix + source.rstrip() + "\n" + statement + "\n"
+
+
+def run_case(glon: Path, source: str, case: dict, timeout: float, tmp: Path, library_prefix: str = "") -> dict:
     if not isinstance(case, dict):
         raise HarnessError("case entry is not an object")
     case_id = str(case.get("id", "unnamed"))
@@ -119,7 +124,10 @@ def run_case(glon: Path, source: str, case: dict, timeout: float, tmp: Path) -> 
         raise HarnessError(f"case {case_id} has no expected_stdout")
 
     program = tmp / (case_id.replace("/", "_") + ".glon")
-    program.write_text(source.rstrip() + "\nprint " + call.strip() + "\n", encoding="utf-8")
+    program.write_text(
+        program_text(library_prefix, source, call, bool(case.get("print", True))),
+        encoding="utf-8",
+    )
     observed = run_program(glon, program, timeout)
     status = classify(case, observed)
     return {
@@ -136,13 +144,16 @@ def run_case(glon: Path, source: str, case: dict, timeout: float, tmp: Path) -> 
     }
 
 
-def run_probe(glon: Path, source: str, probe: dict, timeout: float, tmp: Path) -> dict:
+def run_probe(glon: Path, source: str, probe: dict, timeout: float, tmp: Path, library_prefix: str = "") -> dict:
     probe_id = str(probe.get("id", "probe"))
     call = probe.get("call")
     if not isinstance(call, str) or not call.strip():
         raise HarnessError(f"probe {probe_id} has no call expression")
     program = tmp / ("probe-" + probe_id.replace("/", "_") + ".glon")
-    program.write_text(source.rstrip() + "\nprint " + call.strip() + "\n", encoding="utf-8")
+    program.write_text(
+        program_text(library_prefix, source, call, bool(probe.get("print", True))),
+        encoding="utf-8",
+    )
     observed = run_program(glon, program, timeout)
     return {
         "id": probe_id,
@@ -171,6 +182,29 @@ def challenge_result(glon: Path, challenge_dir: Path, timeout: float, run_probes
         cases = meta.get("cases")
         if not isinstance(cases, list) or not cases:
             raise HarnessError(f"{cases_path}: missing non-empty cases list")
+        libraries = meta.get("libraries", []) or []
+        if not isinstance(libraries, list):
+            raise HarnessError(f"{cases_path}: libraries must be a list")
+        library_prefix = ""
+        for library in libraries:
+            if not isinstance(library, str):
+                raise HarnessError(f"{cases_path}: library entry is not a string")
+            library_path = challenge_dir / library
+            library_text = library_path.read_text(encoding="utf-8")
+            library_prefix += "do " + library_text.strip() + "\n"
+        reference = meta.get("reference_implementation")
+        if reference is not None:
+            if not isinstance(reference, dict):
+                raise HarnessError(f"{cases_path}: reference_implementation must be an object")
+            ref_source = reference.get("source")
+            if not isinstance(ref_source, str):
+                raise HarnessError(f"{cases_path}: reference_implementation.source is missing")
+            ref_path = challenge_dir / ref_source
+            reference = dict(reference)
+            reference["source_sha256"] = sha256(ref_path)
+        comparison = meta.get("implementation_comparison")
+        if comparison is not None and not isinstance(comparison, dict):
+            raise HarnessError(f"{cases_path}: implementation_comparison must be an object")
     except (OSError, HarnessError) as exc:
         name = challenge_dir.name
         return ({
@@ -188,6 +222,11 @@ def challenge_result(glon: Path, challenge_dir: Path, timeout: float, run_probes
             "cases": [],
             "resource_probes": [],
             "known_limitations": [],
+            "implementation_status": "harness_error",
+            "blocker": "",
+            "host_dependency": "",
+            "reference_implementation": None,
+            "implementation_comparison": None,
         }, False, True)
 
     results = []
@@ -196,7 +235,7 @@ def challenge_result(glon: Path, challenge_dir: Path, timeout: float, run_probes
         tmp = Path(td)
         for case in cases:
             try:
-                results.append(run_case(glon, source, case, timeout, tmp))
+                results.append(run_case(glon, source, case, timeout, tmp, library_prefix))
             except HarnessError as exc:
                 harness_error = True
                 results.append({
@@ -208,7 +247,7 @@ def challenge_result(glon: Path, challenge_dir: Path, timeout: float, run_probes
         if run_probes:
             for probe in meta.get("resource_probes", []) or []:
                 try:
-                    probes.append(run_probe(glon, source, probe, timeout, tmp))
+                    probes.append(run_probe(glon, source, probe, timeout, tmp, library_prefix))
                 except HarnessError as exc:
                     harness_error = True
                     probes.append({"id": str(probe.get("id", "probe")), "status": "harness_error", "error": str(exc)})
@@ -240,6 +279,12 @@ def challenge_result(glon: Path, challenge_dir: Path, timeout: float, run_probes
             "timeouts": timeouts,
             "harness_errors": sum(1 for r in results if r.get("status") == "harness_error"),
         },
+        "implementation_status": meta.get("implementation_status", "verified"),
+        "blocker": meta.get("blocker", ""),
+        "host_dependency": meta.get("host_dependency", ""),
+        "libraries": meta.get("libraries", []),
+        "reference_implementation": reference,
+        "implementation_comparison": comparison,
         "cases": results,
         "resource_probes": probes,
         "known_limitations": meta.get("known_limitations", []),
