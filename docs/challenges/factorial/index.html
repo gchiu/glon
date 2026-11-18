@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Factorial (recursive) — Glon Challenge</title>
+<style>
+:root {
+  --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+  --accent:#2456a6; --ok:#1b6b42; --bad:#8b2f22; --code:#20262e;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --ok:#7ad6a2; --bad:#ff9b8d; --code:#242a32; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:980px; padding:1.6rem 16px 4rem; background:var(--bg); color:var(--fg);
+       font:16px/1.6 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .35rem; }
+h2 { font-size:clamp(1.2rem,3vw,1.5rem); margin:2.3rem 0 .6rem; }
+h3 { font-size:1.05rem; margin:0 0 .3rem; }
+p { margin:.5rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.7rem 0; border-bottom:1px solid var(--line); margin-bottom:1.5rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover { color:var(--accent); text-decoration:underline; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.85rem; margin:.8rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card p:last-child { margin-bottom:0; }
+.status { display:inline-block; font-size:.72rem; font-weight:700; letter-spacing:.04em;
+          border-radius:999px; padding:.12rem .55rem; border:1px solid var(--line); }
+.status.pass { color:var(--ok); background:color-mix(in srgb,var(--ok) 10%,transparent); }
+.status.fail { color:var(--bad); background:color-mix(in srgb,var(--bad) 10%,transparent); }
+.meta { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:.6rem 1.2rem;
+        margin:.7rem 0; padding:.8rem 1rem; border:1px solid var(--line); border-radius:8px; background:var(--panel); }
+.meta div { min-width:0; }
+.meta strong { display:block; font-size:.78rem; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+table { border-collapse:collapse; width:100%; margin:.7rem 0 1rem; font-size:.9rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .5rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+td pre { margin:0; padding:.35rem .45rem; font-size:.82rem; }
+tr.pass td:last-child { color:var(--ok); font-weight:600; }
+tr.fail td:last-child { color:var(--bad); font-weight:600; }
+ul { padding-left:1.2rem; }
+li { margin:.25rem 0; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); font-size:.85rem; color:var(--muted); }
+@media (max-width:560px) { body { padding:1rem 14px 3rem; } .topnav { align-items:flex-start; } pre { white-space:pre-wrap; overflow-wrap:anywhere; } }
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Primary navigation">
+  <a class="brand" href="../../index.html">Glon</a>
+  <div class="navlinks">
+    <a href="../../index.html#challenges">Challenges</a>
+    <a href="../../language/">Language</a>
+    <a href="../../grammar/">Grammar</a>
+    <a href="../../index.html#verification">Verification</a>
+  </div>
+</nav>
+
+<main>
+  <p class="muted"><a href="../../index.html">Challenge index</a> / factorial</p>
+  <h1>Factorial (recursive)</h1>
+  <p><span class="status pass">VERIFIED</span> <span class="muted">Verified with the pinned interpreter.</span></p>
+  <p>Compute n! for a nonnegative integer using recursive multiplication. 0! and 1! are the base cases; larger n multiplies n by factorial(n-1).</p>
+  <p><strong>Attribution.</strong> Challenge family: REBOL Cookbook / Rosetta Code. Problem definition: Rosetta Code, &#x27;Factorial&#x27; (https://rosettacode.org/wiki/Factorial). The Glon implementation is original for this challenge.</p>
+  <div class="meta">
+    <div><strong>Interpreter commit</strong><code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></div>
+    <div><strong>Verification date</strong>2026-11-18T00:35:40Z</div>
+    <div><strong>Cases</strong>20 / 20 passed</div>
+    <div><strong>Domain</strong>Nonnegative integers only: n &gt;= 0.</div>
+  </div>
+  <p class="muted"><strong>Reference:</strong> Expected values for 0! through 19! are independent Python math.factorial results. Values beyond the correct range are recorded as observed probes, not asserted as correct.</p>
+
+  <h2 id="source">Glon source</h2>
+  <pre><code>;; fact.glon -- recursive factorial for nonnegative integers.
+;;
+;; Contract: n is a nonnegative integer.
+;; 0! = 1 and 1! = 1. For n &gt; 1, fact(n) = n * fact(n - 1).
+;;
+;; This is ordinary Glon: func, either, &lt;=, -, *, and recursion.
+;; It adds no primitive and does not change the interpreter.
+factorial: func [n] [
+    either &lt;= n 1 [
+        1
+    ] [
+        * n factorial - n 1
+    ]
+]
+</code></pre>
+
+  <h2 id="results">Expected and actual results</h2>
+  <table>
+    <thead><tr><th>Case</th><th>Expected stdout</th><th>Actual stdout</th><th>Exit</th><th>Status</th></tr></thead>
+    <tbody><tr class='pass'><td><code>fact-0</code></td><td><pre><code>1\n</code></pre></td><td><pre><code>1\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-1</code></td><td><pre><code>1\n</code></pre></td><td><pre><code>1\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-2</code></td><td><pre><code>2\n</code></pre></td><td><pre><code>2\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-3</code></td><td><pre><code>6\n</code></pre></td><td><pre><code>6\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-4</code></td><td><pre><code>24\n</code></pre></td><td><pre><code>24\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-5</code></td><td><pre><code>120\n</code></pre></td><td><pre><code>120\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-6</code></td><td><pre><code>720\n</code></pre></td><td><pre><code>720\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-7</code></td><td><pre><code>5040\n</code></pre></td><td><pre><code>5040\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-8</code></td><td><pre><code>40320\n</code></pre></td><td><pre><code>40320\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-9</code></td><td><pre><code>362880\n</code></pre></td><td><pre><code>362880\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-10</code></td><td><pre><code>3628800\n</code></pre></td><td><pre><code>3628800\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-11</code></td><td><pre><code>39916800\n</code></pre></td><td><pre><code>39916800\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-12</code></td><td><pre><code>479001600\n</code></pre></td><td><pre><code>479001600\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-13</code></td><td><pre><code>6227020800\n</code></pre></td><td><pre><code>6227020800\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-14</code></td><td><pre><code>87178291200\n</code></pre></td><td><pre><code>87178291200\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-15</code></td><td><pre><code>1307674368000\n</code></pre></td><td><pre><code>1307674368000\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-16</code></td><td><pre><code>20922789888000\n</code></pre></td><td><pre><code>20922789888000\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-17</code></td><td><pre><code>355687428096000\n</code></pre></td><td><pre><code>355687428096000\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-18</code></td><td><pre><code>6402373705728000\n</code></pre></td><td><pre><code>6402373705728000\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr><tr class='pass'><td><code>fact-19</code></td><td><pre><code>121645100408832000\n</code></pre></td><td><pre><code>121645100408832000\n</code></pre></td><td><pre><code>0</code></pre></td><td>pass</td></tr></tbody>
+  </table>
+
+  <h2 id="limits">Known limitations</h2>
+  <ul><li>Accepts nonnegative integers only. Negative inputs are outside the contract and are not tested.</li>
+<li>0! through 19! are correct on the pinned native interpreter.</li>
+<li>20! is the first arithmetic overflow: mathematical 20! = 2432902008176640000, but Glon exits 0 and prints 127058998962946048. Glon does not signal integer overflow.</li>
+<li>Later factorial values are wrapped/incorrect even when the process exits 0; they are not valid mathematical results.</li>
+<li>Recursion also has an implementation limit: factorial 85 returns an already-overflowed 0, while factorial 86 fail-stops with return-stack exhaustion (exit 1). This resource limit is distinct from the earlier arithmetic overflow.</li>
+<li>Machine fail-stops are not catchable SIN! values. No runtime change is made to bypass either limit.</li></ul>
+
+  <h2 id="probes">Resource probes</h2><table><thead><tr><th>Probe</th><th>Call</th><th>Exit</th><th>Observed stdout / diagnostic</th></tr></thead><tbody><tr><td><code>fact-20</code></td><td>factorial 20</td><td>0</td><td>127058998962946048</td></tr><tr><td><code>fact-21</code></td><td>factorial 21</td><td>0</td><td>362395969008173056</td></tr><tr><td><code>fact-85</code></td><td>factorial 85</td><td>0</td><td>0</td></tr><tr><td><code>fact-86</code></td><td>factorial 86</td><td>1</td><td>glon: /tmp/glon-factorial-rn0q8r5j/probe-fact-86.glon: ** halted (no SIN!: a machine-level fail-stop)</td></tr></tbody></table>
+
+  <h2 id="docs">Language documentation</h2>
+  <ul><li><a href="https://gchiu.github.io/glon/language/">Language reference</a></li>
+<li><a href="https://gchiu.github.io/glon/grammar/">Grammar and railroad diagrams</a></li>
+<li><a href="https://gchiu.github.io/glon/language/laws.html">Alpha language laws</a></li>
+<li><a href="https://gchiu.github.io/glon/language/spec.html">Language specification</a></li>
+<li><a href="https://gchiu.github.io/glon/language/evaluation.html">Evaluation model</a></li>
+<li><a href="https://gchiu.github.io/glon/language/host-abi.html">Host ABI</a></li>
+<li><a href="https://gchiu.github.io/glon/language/ai-authoring.html">AI authoring guide</a></li></ul>
+  <p><a href="source.glon">Download challenge source</a> · <a href="results.json">Result JSON</a></p>
+</main>
+<footer>Results are generated from actual runs of the pinned native Glon interpreter. No result is fabricated or manually marked as passing.</footer>
+
+</body>
+</html>

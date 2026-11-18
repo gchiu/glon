@@ -71,8 +71,8 @@ footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); fo
   <h1>Glon</h1>
   <p class="muted">Canonical public language documentation and verified REBOL Cookbook / Rosetta Code style programming challenges, built from the published Glon grammar and upstream sources.</p>
   <div class="meta">
-    <div><strong>Challenges</strong>1</div>
-    <div><strong>Cases passed</strong>7 / 7</div>
+    <div><strong>Challenges</strong>2</div>
+    <div><strong>Cases passed</strong>27 / 27</div>
     <div><strong>Interpreter commit</strong><code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></div>
     <div><strong>Status</strong><span class="status pass">VERIFIED</span></div>
   </div>
@@ -95,7 +95,7 @@ footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); fo
      <a href="source/glon-grammar.ebnf">glon-grammar.ebnf</a>.</p>
 
   <h2 id="challenges">Challenges</h2>
-  <div class="cards"><div class="card"><h3><a href="challenges/gcd/index.html">Greatest Common Divisor</a></h3><p><span class="status pass">VERIFIED</span></p><p>Compute the greatest common divisor of two nonnegative integers using Euclid&#x27;s algorithm. This first Glon implementation uses repeated subtraction.</p><p class="muted">Interpreter: <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code><br>Cases: 7 / 7 passed</p></div></div>
+  <div class="cards"><div class="card"><h3><a href="challenges/factorial/index.html">Factorial (recursive)</a></h3><p><span class="status pass">VERIFIED</span></p><p>Compute n! for a nonnegative integer using recursive multiplication. 0! and 1! are the base cases; larger n multiplies n by factorial(n-1).</p><p class="muted">Interpreter: <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code><br>Cases: 20 / 20 passed</p></div><div class="card"><h3><a href="challenges/gcd/index.html">Greatest Common Divisor</a></h3><p><span class="status pass">VERIFIED</span></p><p>Compute the greatest common divisor of two nonnegative integers using Euclid&#x27;s algorithm. This first Glon implementation uses repeated subtraction.</p><p class="muted">Interpreter: <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code><br>Cases: 7 / 7 passed</p></div></div>
   <h2 id="verification">Verification</h2>
   <p>Each result below comes from executing the pinned native Glon CLI. Expected values are independent problem results; actual stdout, stderr, exit status, duration, timeouts and the interpreter commit are recorded in the JSON. Harness failures are reported separately from language failures.</p>
   <p class="muted">Generated from results. Publication requires every case to pass.</p>

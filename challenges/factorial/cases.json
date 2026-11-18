@@ -1,0 +1,187 @@
+{
+  "schema": 1,
+  "challenge": "factorial",
+  "title": "Factorial (recursive)",
+  "entry": "factorial",
+  "source": "fact.glon",
+  "domain": "Nonnegative integers only: n >= 0.",
+  "description": "Compute n! for a nonnegative integer using recursive multiplication. 0! and 1! are the base cases; larger n multiplies n by factorial(n-1).",
+  "attribution": "Challenge family: REBOL Cookbook / Rosetta Code. Problem definition: Rosetta Code, 'Factorial' (https://rosettacode.org/wiki/Factorial). The Glon implementation is original for this challenge.",
+  "reference": "Expected values for 0! through 19! are independent Python math.factorial results. Values beyond the correct range are recorded as observed probes, not asserted as correct.",
+  "cases": [
+    {
+      "id": "fact-0",
+      "call": "factorial 0",
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "0! = 1 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-1",
+      "call": "factorial 1",
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "1! = 1 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-2",
+      "call": "factorial 2",
+      "expected_exit": 0,
+      "expected_stdout": "2\n",
+      "reference": "2! = 2 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-3",
+      "call": "factorial 3",
+      "expected_exit": 0,
+      "expected_stdout": "6\n",
+      "reference": "3! = 6 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-4",
+      "call": "factorial 4",
+      "expected_exit": 0,
+      "expected_stdout": "24\n",
+      "reference": "4! = 24 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-5",
+      "call": "factorial 5",
+      "expected_exit": 0,
+      "expected_stdout": "120\n",
+      "reference": "5! = 120 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-6",
+      "call": "factorial 6",
+      "expected_exit": 0,
+      "expected_stdout": "720\n",
+      "reference": "6! = 720 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-7",
+      "call": "factorial 7",
+      "expected_exit": 0,
+      "expected_stdout": "5040\n",
+      "reference": "7! = 5040 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-8",
+      "call": "factorial 8",
+      "expected_exit": 0,
+      "expected_stdout": "40320\n",
+      "reference": "8! = 40320 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-9",
+      "call": "factorial 9",
+      "expected_exit": 0,
+      "expected_stdout": "362880\n",
+      "reference": "9! = 362880 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-10",
+      "call": "factorial 10",
+      "expected_exit": 0,
+      "expected_stdout": "3628800\n",
+      "reference": "10! = 3628800 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-11",
+      "call": "factorial 11",
+      "expected_exit": 0,
+      "expected_stdout": "39916800\n",
+      "reference": "11! = 39916800 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-12",
+      "call": "factorial 12",
+      "expected_exit": 0,
+      "expected_stdout": "479001600\n",
+      "reference": "12! = 479001600 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-13",
+      "call": "factorial 13",
+      "expected_exit": 0,
+      "expected_stdout": "6227020800\n",
+      "reference": "13! = 6227020800 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-14",
+      "call": "factorial 14",
+      "expected_exit": 0,
+      "expected_stdout": "87178291200\n",
+      "reference": "14! = 87178291200 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-15",
+      "call": "factorial 15",
+      "expected_exit": 0,
+      "expected_stdout": "1307674368000\n",
+      "reference": "15! = 1307674368000 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-16",
+      "call": "factorial 16",
+      "expected_exit": 0,
+      "expected_stdout": "20922789888000\n",
+      "reference": "16! = 20922789888000 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-17",
+      "call": "factorial 17",
+      "expected_exit": 0,
+      "expected_stdout": "355687428096000\n",
+      "reference": "17! = 355687428096000 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-18",
+      "call": "factorial 18",
+      "expected_exit": 0,
+      "expected_stdout": "6402373705728000\n",
+      "reference": "18! = 6402373705728000 (independent Python math.factorial)"
+    },
+    {
+      "id": "fact-19",
+      "call": "factorial 19",
+      "expected_exit": 0,
+      "expected_stdout": "121645100408832000\n",
+      "reference": "19! = 121645100408832000 (independent Python math.factorial)"
+    }
+  ],
+  "resource_probes": [
+    {
+      "id": "fact-20",
+      "call": "factorial 20",
+      "observed": "exit 0, stdout 127058998962946048",
+      "note": "First observed arithmetic overflow: mathematical 20! is 2432902008176640000. The Glon process still exits 0 and prints a wrapped/incorrect tagged integer."
+    },
+    {
+      "id": "fact-21",
+      "call": "factorial 21",
+      "observed": "exit 0, stdout 362395969008173056",
+      "note": "Further arithmetic overflow; no error is signalled by the interpreter."
+    },
+    {
+      "id": "fact-85",
+      "call": "factorial 85",
+      "observed": "exit 0, stdout 0",
+      "note": "Already overflowed many times; output is meaningless. This is not a recursion failure."
+    },
+    {
+      "id": "fact-86",
+      "call": "factorial 86",
+      "observed": "exit 1, machine halt: return-stack exhaustion",
+      "note": "Resource exhaustion, distinct from arithmetic overflow. This is a machine-level fail-stop, not a catchable SIN!."
+    }
+  ],
+  "known_limitations": [
+    "Accepts nonnegative integers only. Negative inputs are outside the contract and are not tested.",
+    "0! through 19! are correct on the pinned native interpreter.",
+    "20! is the first arithmetic overflow: mathematical 20! = 2432902008176640000, but Glon exits 0 and prints 127058998962946048. Glon does not signal integer overflow.",
+    "Later factorial values are wrapped/incorrect even when the process exits 0; they are not valid mathematical results.",
+    "Recursion also has an implementation limit: factorial 85 returns an already-overflowed 0, while factorial 86 fail-stops with return-stack exhaustion (exit 1). This resource limit is distinct from the earlier arithmetic overflow.",
+    "Machine fail-stops are not catchable SIN! values. No runtime change is made to bypass either limit."
+  ]
+}

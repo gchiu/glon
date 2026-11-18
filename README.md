@@ -25,10 +25,10 @@ upstream Markdown and EBNF; it does not maintain divergent handwritten copies.
 
 | Challenge | Language surface | Status |
 |---|---|---|
-| [GCD](challenges/gcd/README.md) | Nonnegative integer subtraction Euclid | Verified locally |
+| [GCD](challenges/gcd/README.md) | Nonnegative integer subtraction Euclid | Verified |
+| [Factorial](challenges/factorial/README.md) | Recursive multiplication, 0!–19! | Verified; overflow at 20! |
 
-The suite starts with one challenge. Further challenges should be added only
-after the first has been reviewed.
+Challenges are added one at a time and reviewed before the next is started.
 
 ## Pinned interpreter
 

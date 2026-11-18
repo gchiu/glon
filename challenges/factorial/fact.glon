@@ -1,0 +1,14 @@
+;; fact.glon -- recursive factorial for nonnegative integers.
+;;
+;; Contract: n is a nonnegative integer.
+;; 0! = 1 and 1! = 1. For n > 1, fact(n) = n * fact(n - 1).
+;;
+;; This is ordinary Glon: func, either, <=, -, *, and recursion.
+;; It adds no primitive and does not change the interpreter.
+factorial: func [n] [
+    either <= n 1 [
+        1
+    ] [
+        * n factorial - n 1
+    ]
+]
