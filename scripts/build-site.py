@@ -55,6 +55,7 @@ pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1r
 .pane-meta a { font-weight:600; }
 .compare-table { margin-top:.8rem; }
 .notice { color:var(--muted); font-size:.9rem; margin:.6rem 0 1rem; }
+.layer-size { display:block; color:var(--muted); font-size:.8rem; margin-top:.3rem; }
 @media (max-width:760px) { .code-compare { grid-template-columns:1fr; } }
 .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.85rem; margin:.8rem 0; }
 .card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
@@ -166,13 +167,14 @@ def source_stats(text: str) -> str:
 def implementation_section(result: dict, source_text: str, challenge_dir: Path) -> tuple[str, str]:
     reference = result.get("reference_implementation")
     comparison = result.get("implementation_comparison") or {}
-    glon_label = "Glon implementation"
-    if result.get("implementation_status") == "partial":
-        glon_label += " (partial)"
+    glon_layer = "Glon library" if reference else "Glon implementation"
+    glon_label = glon_layer + (" (partial)" if result.get("implementation_status") == "partial" else "")
+    glon_source_label = "library source" if reference else "source"
     glon_pane = (
         '<div class="code-pane">'
         f'<h3>{esc(glon_label)}</h3>'
-        f'<p class="pane-meta"><a href="source.glon">Download Glon source</a> · {esc(source_stats(source_text))}</p>'
+        f'<p class="pane-meta"><a href="source.glon">Download Glon source</a>'
+        f' · {glon_source_label}: {esc(source_stats(source_text))}</p>'
         f'{code(source_text)}</div>'
     )
     if not reference:
@@ -184,38 +186,62 @@ def implementation_section(result: dict, source_text: str, challenge_dir: Path) 
     title = reference.get("title", "Original reference implementation")
     attribution = reference.get("attribution", "")
     url = reference.get("url", "")
-    ref_meta = " · ".join(x for x in (attribution, source_stats(ref_text)) if x)
+    ref_meta = " · ".join(x for x in (attribution, "application source: " + source_stats(ref_text)) if x)
     ref_link = f' · <a href="{esc(url)}" target="_blank" rel="noopener">Archived Cookbook recipe</a>' if url else ""
     ref_pane = (
         '<div class="code-pane">'
-        f'<h3>{esc(lang)} — original</h3>'
+        f'<h3>{esc(lang)} — original Cookbook application</h3>'
         f'<p class="pane-meta">{esc(title)}<br>{esc(ref_meta)}{ref_link}</p>'
         f'{code(ref_text)}</div>'
     )
     panes = f'<div class="code-compare">{ref_pane}{glon_pane}</div>'
 
-    rows = []
-    rebol = comparison.get("rebol", {})
-    glon = comparison.get("glon", {})
-    for label, rkey in [
-        ("Observable behaviour", "observable_behaviour"),
-        ("Required facilities", "facilities"),
-        ("Test status", "test_status"),
-    ]:
-        rows.append(
-            f'<tr><td>{esc(label)}</td><td>{esc(rebol.get(rkey, ""))}</td><td>{esc(glon.get(rkey, ""))}</td></tr>'
+    layer_notice = ('<p class="notice"><strong>These listings are different layers.</strong> '
+                    'The REBOL listing is an application using existing read/replace/write; '
+                    'the Glon listing is a reusable replace-first library function, and the '
+                    'Glon file application is incomplete.</p>')
+
+    layers = comparison.get("layers")
+    if isinstance(layers, list) and layers:
+        rows = []
+        for layer in layers:
+            rebol_text = esc(layer.get("rebol", ""))
+            glon_text = esc(layer.get("glon", ""))
+            if layer.get("rebol_source_size"):
+                rebol_text += f'<span class="layer-size">Application source: {esc(source_stats(ref_text))}</span>'
+            if layer.get("glon_source_size"):
+                glon_text += f'<span class="layer-size">Library source: {esc(source_stats(source_text))}</span>'
+            rows.append(
+                f'<tr><td>{esc(layer.get("layer", ""))}</td><td>{rebol_text}</td>'
+                f'<td>{glon_text}</td><td>{esc(layer.get("note", ""))}</td></tr>'
+            )
+        compare_table = (
+            '<h3>Three-layer comparison</h3>'
+            f'<table class="compare-table"><thead><tr><th>Layer</th><th>{esc(lang)}</th>'
+            '<th>Glon</th><th>Comparability</th></tr></thead>'
+            f'<tbody>{"".join(rows)}</tbody></table>'
         )
-    rows.append(
-        f'<tr><td>Source size</td><td>{esc(source_stats(ref_text))}</td><td>{esc(source_stats(source_text))}</td></tr>'
-    )
+    else:
+        rows = []
+        rebol = comparison.get("rebol", {})
+        glon = comparison.get("glon", {})
+        for label, rkey in [
+            ("Observable behaviour", "observable_behaviour"),
+            ("Required facilities", "facilities"),
+            ("Test status", "test_status"),
+        ]:
+            rows.append(
+                f'<tr><td>{esc(label)}</td><td>{esc(rebol.get(rkey, ""))}</td><td>{esc(glon.get(rkey, ""))}</td></tr>'
+            )
+        compare_table = (
+            '<h3>Implementation comparison</h3>'
+            f'<table class="compare-table"><thead><tr><th>Aspect</th><th>{esc(lang)}</th><th>Glon</th></tr></thead>'
+            f'<tbody>{"".join(rows)}</tbody></table>'
+        )
     notice = comparison.get("notice", "")
-    compare_table = (
-        '<h3>Implementation comparison</h3>'
-        f'<table class="compare-table"><thead><tr><th>Aspect</th><th>{esc(lang)}</th><th>Glon</th></tr></thead>'
-        f'<tbody>{"".join(rows)}</tbody></table>'
-        + (f'<p class="notice">{esc(notice)}</p>' if notice else '')
-    )
-    return '<h2 id="source">Source listings</h2>' + panes, compare_table
+    if notice:
+        compare_table += f'<p class="notice">{esc(notice)}</p>'
+    return '<h2 id="source">Source listings</h2>' + layer_notice + panes, compare_table
 
 
 def challenge_body(result: dict, source_text: str, config: dict, challenge_dir: Path) -> str:

@@ -61,6 +61,26 @@ Only the first occurrence changes. Later occurrences remain unchanged.
 These are **string-content tests**, not file tests. The file read/write part of
 the original REBOL program remains blocked by the missing host capability.
 
+## Three-layer comparison
+
+The REBOL and Glon source listings are not equivalent abstraction layers.
+
+| Layer | REBOL 2 | Glon |
+|---|---|---|
+| **1. Core operations and primitives** | REBOL 2 provides its own runtime and series/file facilities. This comparison does not assert which of `read`, `replace` and `write` are core primitives. | S1 has seven frozen primitives and the R0 evaluator has no file or replace primitive. String operations are library code. |
+| **2. Mezzanine/library functions** | `replace` is a mezzanine in Oldes' Rebol 3 at `src/mezz/mezz-series.reb:129`. This does not establish the exact implementation or provenance of REBOL 2's `replace`. | `replace-first` is a reusable Glon library implementation over `s/slice`, `s/+`, `s/=` and `s/length`. It handles in-memory first-occurrence replacement only. |
+| **3. Application code** | The Cookbook application is four lines of REBOL: read a file, call the existing `replace` mezzanine, write the file. | No complete application is implemented. The pinned native CLI has no file read/write capability; only the in-memory replacement job is tested. |
+
+The source-size metadata is therefore labelled by layer:
+
+- REBOL application listing: **4 lines / 74 bytes**;
+- Glon `replace-first` library listing: **31 lines / 1,038 bytes**;
+- Glon file application: **not implemented**.
+
+These figures are not a concision comparison. The REBOL application uses
+existing runtime/mezzanine facilities and file I/O; the Glon listing is a
+reusable library function and the Glon file application is incomplete.
+
 ## Required host dependency for the complete operation
 
 A complete implementation would need a documented Glon file capability, at

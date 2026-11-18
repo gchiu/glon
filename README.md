@@ -156,12 +156,44 @@ For a REBOL Cookbook challenge, add the original program verbatim as
 }
 ```
 
-An optional `implementation_comparison` object supplies the observable
-behaviour, required facilities and test status for each language. The site
-generator displays the original and Glon listings side by side on desktop and
-stacked on mobile, adds both to the challenge page, and records source sizes
-without implying that the programs are equally concise or that the original
-program was executed. Every reference source must remain byte-for-byte verbatim.
+An optional `implementation_comparison` object supplies the comparison by
+abstraction layer:
+
+```json
+{
+  "implementation_comparison": {
+    "layers": [
+      {
+        "layer": "1. Core operations and primitives",
+        "rebol": "What the reference runtime provides; do not assert provenance without evidence.",
+        "glon": "What the frozen S1/R0 layers provide.",
+        "note": "Comparability note."
+      },
+      {
+        "layer": "2. Mezzanine/library functions",
+        "rebol": "For example: replace is a mezzanine in Oldes' Rebol 3 at src/mezz/mezz-series.reb:129; this does not establish REBOL 2 provenance.",
+        "glon": "The reusable Glon library function and its scope.",
+        "glon_source_size": true,
+        "note": "Library layer, not application equivalent."
+      },
+      {
+        "layer": "3. Application code",
+        "rebol": "The reference application and the facilities it uses.",
+        "glon": "Whether a complete Glon application exists and what is missing.",
+        "rebol_source_size": true,
+        "note": "Application layer; state missing file I/O explicitly."
+      }
+    ],
+    "notice": "Source sizes are factual metadata labelled by layer, not a concision claim."
+  }
+}
+```
+
+The generator displays the original and Glon listings side by side on desktop
+and stacked on mobile, adds both to the challenge page, and puts source-size
+metadata in the layer where it belongs. It must not imply that the programs
+are equally concise or that the original program was executed. Every reference
+source must remain byte-for-byte verbatim.
 
 ## Challenge rules
 

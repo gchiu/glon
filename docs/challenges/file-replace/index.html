@@ -40,6 +40,7 @@ pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1r
 .pane-meta a { font-weight:600; }
 .compare-table { margin-top:.8rem; }
 .notice { color:var(--muted); font-size:.9rem; margin:.6rem 0 1rem; }
+.layer-size { display:block; color:var(--muted); font-size:.8rem; margin-top:.3rem; }
 @media (max-width:760px) { .code-compare { grid-template-columns:1fr; } }
 .cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(240px,1fr)); gap:.85rem; margin:.8rem 0; }
 .card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
@@ -89,17 +90,17 @@ footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); fo
   <p class="muted"><strong>Libraries loaded:</strong> <code>vendor/strings-ext.glon</code></p>
   <div class="meta">
     <div><strong>Interpreter commit</strong><code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></div>
-    <div><strong>Verification date</strong>2026-11-18T02:00:25Z</div>
+    <div><strong>Verification date</strong>2026-11-18T03:22:37Z</div>
     <div><strong>Cases</strong>6 / 6 passed</div>
     <div><strong>Domain</strong>In-memory STRING! text only; no file read/write capability is available in the pinned native Glon CLI.</div>
   </div>
   <p class="muted"><strong>Reference:</strong> REBOL replace changes only the first occurrence of the target string and leaves later occurrences unchanged. The six cases below test beginning, middle, end, no match, multiple matches and empty text.</p>
 
-  <h2 id="source">Source listings</h2><div class="code-compare"><div class="code-pane"><h3>REBOL 2 — original</h3><p class="pane-meta">Replace Text in a File — original REBOL 2 Cookbook program<br>Author: Carl Sassenrath. REBOL Cookbook, recipe 0004, &#x27;Replace Text in a File&#x27;. · 4 lines / 74 bytes · <a href="https://web.archive.org/web/20250320233703/http://www.rebol.net/cookbook/recipes/0004.html" target="_blank" rel="noopener">Archived Cookbook recipe</a></p><pre><code>file: %doc.txt
+  <h2 id="source">Source listings</h2><p class="notice"><strong>These listings are different layers.</strong> The REBOL listing is an application using existing read/replace/write; the Glon listing is a reusable replace-first library function, and the Glon file application is incomplete.</p><div class="code-compare"><div class="code-pane"><h3>REBOL 2 — original Cookbook application</h3><p class="pane-meta">Replace Text in a File — original REBOL 2 Cookbook program<br>Author: Carl Sassenrath. REBOL Cookbook, recipe 0004, &#x27;Replace Text in a File&#x27;. · application source: 4 lines / 74 bytes · <a href="https://web.archive.org/web/20250320233703/http://www.rebol.net/cookbook/recipes/0004.html" target="_blank" rel="noopener">Archived Cookbook recipe</a></p><pre><code>file: %doc.txt
 text: read file
 replace text &quot;web&quot; &quot;rebol&quot;
 write file text
-</code></pre></div><div class="code-pane"><h3>Glon implementation (partial)</h3><p class="pane-meta"><a href="source.glon">Download Glon source</a> · 31 lines / 1038 bytes</p><pre><code>;; replace.glon -- replace ONLY the first occurrence of `old` with `new`.
+</code></pre></div><div class="code-pane"><h3>Glon library (partial)</h3><p class="pane-meta"><a href="source.glon">Download Glon source</a> · library source: 31 lines / 1038 bytes</p><pre><code>;; replace.glon -- replace ONLY the first occurrence of `old` with `new`.
 ;;
 ;; PARTIAL CHALLENGE IMPLEMENTATION.
 ;; This operates on an in-memory STRING! only. The published native Glon CLI
@@ -131,7 +132,7 @@ replace-first: func [text old new] [
     ]
 ]
 </code></pre></div></div>
-  <h3>Implementation comparison</h3><table class="compare-table"><thead><tr><th>Aspect</th><th>REBOL 2</th><th>Glon</th></tr></thead><tbody><tr><td>Observable behaviour</td><td>Reads %doc.txt, performs replace (first occurrence only), and writes the result back to %doc.txt.</td><td>Computes REBOL&#x27;s first-occurrence replacement on an in-memory STRING!. Does not read or write a file.</td></tr><tr><td>Required facilities</td><td>REBOL 2 built-in read, replace and write.</td><td>Existing string library s/+, s/= and s/length; optional strings-ext s/slice; no file I/O vocabulary.</td></tr><tr><td>Test status</td><td>Not executed here. The original listing is preserved as reference source only; no REBOL runtime was run.</td><td>6/6 in-memory replacement cases executed and passed. Complete file round-trip not executable with the pinned native CLI.</td></tr><tr><td>Source size</td><td>4 lines / 74 bytes</td><td>31 lines / 1038 bytes</td></tr></tbody></table><p class="notice">Source sizes are descriptive only. This is not a concision comparison: the REBOL program includes file I/O while the Glon implementation is a partial in-memory substitute.</p>
+  <h3>Three-layer comparison</h3><table class="compare-table"><thead><tr><th>Layer</th><th>REBOL 2</th><th>Glon</th><th>Comparability</th></tr></thead><tbody><tr><td>1. Core operations and primitives</td><td>REBOL 2 provides its own runtime and series/file facilities. This comparison does not assert which of read, replace or write are core primitives in REBOL 2.</td><td>Frozen S1 has seven primitives and the R0 evaluator has no file or replace primitive. In-memory string operations are library code.</td><td>Different substrate layers; no source-size comparison.</td></tr><tr><td>2. Mezzanine/library functions</td><td>replace is a mezzanine in Oldes&#x27; Rebol 3 at src/mezz/mezz-series.reb:129. This does not establish the exact implementation or provenance of REBOL 2&#x27;s replace.</td><td>replace-first is a reusable Glon library implementation over s/slice, s/+, s/= and s/length. It implements first-occurrence replacement on in-memory strings only.<span class="layer-size">Library source: 31 lines / 1038 bytes</span></td><td>The Glon listing is a library function, not an application equivalent.</td></tr><tr><td>3. Application code</td><td>The Cookbook application reads a file, invokes the existing replace mezzanine, and writes the same file.<span class="layer-size">Application source: 4 lines / 74 bytes</span></td><td>No complete application is implemented. File read/write is unavailable in the pinned native CLI; only an in-memory partial replacement job is tested.</td><td>This is where the implementations differ: REBOL has file I/O; Glon does not.</td></tr></tbody></table><p class="notice">Source sizes are factual metadata labelled by abstraction layer. They do not compare equivalent implementation layers and are not a concision claim. REBOL&#x27;s application listing uses existing read/replace/write facilities; Glon&#x27;s listing is a reusable library function and its file application is incomplete.</p>
 
   <h2 id="results">Expected and actual results</h2>
   <table>

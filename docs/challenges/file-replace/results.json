@@ -8,7 +8,7 @@
       "actual_stderr": "",
       "actual_stdout": "rebol site\n",
       "call": "s/print replace-first \"web site\" \"web\" \"rebol\"",
-      "duration_ms": 6,
+      "duration_ms": 4,
       "expected_exit": 0,
       "expected_stdout": "rebol site\n",
       "id": "beginning",
@@ -20,7 +20,7 @@
       "actual_stderr": "",
       "actual_stdout": "the rebol is wide\n",
       "call": "s/print replace-first \"the web is wide\" \"web\" \"rebol\"",
-      "duration_ms": 9,
+      "duration_ms": 4,
       "expected_exit": 0,
       "expected_stdout": "the rebol is wide\n",
       "id": "middle",
@@ -32,7 +32,7 @@
       "actual_stderr": "",
       "actual_stdout": "the rebol\n",
       "call": "s/print replace-first \"the web\" \"web\" \"rebol\"",
-      "duration_ms": 8,
+      "duration_ms": 4,
       "expected_exit": 0,
       "expected_stdout": "the rebol\n",
       "id": "end",
@@ -44,7 +44,7 @@
       "actual_stderr": "",
       "actual_stdout": "the internet\n",
       "call": "s/print replace-first \"the internet\" \"web\" \"rebol\"",
-      "duration_ms": 11,
+      "duration_ms": 5,
       "expected_exit": 0,
       "expected_stdout": "the internet\n",
       "id": "no-match",
@@ -56,7 +56,7 @@
       "actual_stderr": "",
       "actual_stdout": "rebol web web\n",
       "call": "s/print replace-first \"web web web\" \"web\" \"rebol\"",
-      "duration_ms": 7,
+      "duration_ms": 4,
       "expected_exit": 0,
       "expected_stdout": "rebol web web\n",
       "id": "multiple",
@@ -68,7 +68,7 @@
       "actual_stderr": "",
       "actual_stdout": "\n",
       "call": "s/print replace-first \"\" \"web\" \"rebol\"",
-      "duration_ms": 5,
+      "duration_ms": 3,
       "expected_exit": 0,
       "expected_stdout": "\n",
       "id": "empty",
@@ -80,20 +80,32 @@
   "description": "Partial implementation of the REBOL 2 Cookbook file text replacement program. The in-memory first-occurrence replacement is implemented in Glon; the file read/write round trip is blocked by missing host I/O.",
   "domain": "In-memory STRING! text only; no file read/write capability is available in the pinned native Glon CLI.",
   "entry": "replace-first",
-  "generated_at": "2026-11-18T02:00:25Z",
+  "generated_at": "2026-11-18T03:22:37Z",
   "host_dependency": "None available for complete operation. A future complete challenge would require documented Glon file read and write capabilities.",
   "implementation_comparison": {
-    "glon": {
-      "facilities": "Existing string library s/+, s/= and s/length; optional strings-ext s/slice; no file I/O vocabulary.",
-      "observable_behaviour": "Computes REBOL's first-occurrence replacement on an in-memory STRING!. Does not read or write a file.",
-      "test_status": "6/6 in-memory replacement cases executed and passed. Complete file round-trip not executable with the pinned native CLI."
-    },
-    "notice": "Source sizes are descriptive only. This is not a concision comparison: the REBOL program includes file I/O while the Glon implementation is a partial in-memory substitute.",
-    "rebol": {
-      "facilities": "REBOL 2 built-in read, replace and write.",
-      "observable_behaviour": "Reads %doc.txt, performs replace (first occurrence only), and writes the result back to %doc.txt.",
-      "test_status": "Not executed here. The original listing is preserved as reference source only; no REBOL runtime was run."
-    }
+    "layers": [
+      {
+        "glon": "Frozen S1 has seven primitives and the R0 evaluator has no file or replace primitive. In-memory string operations are library code.",
+        "layer": "1. Core operations and primitives",
+        "note": "Different substrate layers; no source-size comparison.",
+        "rebol": "REBOL 2 provides its own runtime and series/file facilities. This comparison does not assert which of read, replace or write are core primitives in REBOL 2."
+      },
+      {
+        "glon": "replace-first is a reusable Glon library implementation over s/slice, s/+, s/= and s/length. It implements first-occurrence replacement on in-memory strings only.",
+        "glon_source_size": true,
+        "layer": "2. Mezzanine/library functions",
+        "note": "The Glon listing is a library function, not an application equivalent.",
+        "rebol": "replace is a mezzanine in Oldes' Rebol 3 at src/mezz/mezz-series.reb:129. This does not establish the exact implementation or provenance of REBOL 2's replace."
+      },
+      {
+        "glon": "No complete application is implemented. File read/write is unavailable in the pinned native CLI; only an in-memory partial replacement job is tested.",
+        "layer": "3. Application code",
+        "note": "This is where the implementations differ: REBOL has file I/O; Glon does not.",
+        "rebol": "The Cookbook application reads a file, invokes the existing replace mezzanine, and writes the same file.",
+        "rebol_source_size": true
+      }
+    ],
+    "notice": "Source sizes are factual metadata labelled by abstraction layer. They do not compare equivalent implementation layers and are not a concision claim. REBOL's application listing uses existing read/replace/write facilities; Glon's listing is a reusable library function and its file application is incomplete."
   },
   "implementation_status": "partial",
   "interpreter": {
