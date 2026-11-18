@@ -1,0 +1,479 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Syntax Diagrams</title>
+<style>
+:root { --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+        --accent:#2456a6; --code:#20262e; --ok:#1b6b42; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --code:#242a32; --ok:#7ad6a2; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:1040px; padding:0 16px 4rem; color:var(--fg); background:var(--bg);
+       font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3,h4 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .4rem; }
+h2 { font-size:clamp(1.25rem,3vw,1.55rem); margin:2.2rem 0 .6rem; }
+h3 { font-size:1.1rem; margin:1.6rem 0 .4rem; }
+p { margin:.55rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:inherit; overflow-wrap:normal; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.75rem 0; border-bottom:1px solid var(--line); margin-bottom:1.4rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover, .navlinks a:focus-visible { color:var(--accent); text-decoration:underline; }
+.pagelead { display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; margin:0 0 1rem;
+            font-size:.86rem; color:var(--muted); }
+.pagelead a { font-weight:600; }
+table { border-collapse:collapse; width:100%; margin:.8rem 0 1.2rem; font-size:.92rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .55rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+blockquote { border-left:3px solid var(--line); margin:1rem 0; padding:.5rem 1rem; color:var(--muted); background:var(--panel); }
+ul,ol { padding-left:1.4rem; }
+li { margin:.2rem 0; }
+.mermaid { overflow-x:auto; text-align:center; margin:1.2rem 0; }
+.mermaid svg { max-width:100%; height:auto; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; margin:1rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card h3 { margin:.1rem 0 .35rem; }
+.card p:last-child { margin-bottom:0; }
+.source-list { font-size:.9rem; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem; }
+@media (max-width:560px) {
+  body { padding:0 14px 3rem; }
+  .topnav { align-items:flex-start; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Site navigation">
+  <a class="brand" href="../">Glon</a>
+  <div class="navlinks">
+    <a href="../">Home</a>
+    <a href="index.html">Language</a>
+    <a href="../grammar/">Grammar</a>
+    <a href="../#challenges">Challenges</a>
+  </div>
+</nav>
+<main>
+<div class="pagelead"><a href="../source/GLON-SYNTAX-DIAGRAMS.md">View Markdown source</a> <span>Upstream commit <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></span></div>
+<h1 id="glon-syntax-diagrams">Glon Syntax Diagrams</h1>
+<p>This file diagrams the grammar the current reader actually implements. It is
+descriptive: <code>GLON-ALPHA-LAWS.md</code> is normative and the reader is the ground
+truth for lexical detail. The productions and diagrams were verified against
+the reader in <code>GLON-SPEC-VERIFICATION.md</code> §3–§4. See
+<code>GLON-LANGUAGE-SPEC.md</code> §1 for prose.</p>
+<h2 id="notation">Notation</h2>
+<ul>
+<li><code>[</code> and <code>]</code> in a diagram are literal Glon brackets; <code>{ ... }</code> means
+  repetition; <code>?</code> means optional.</li>
+<li>The reader has no comment syntax. A host strips <code>;;</code> comments before the
+  reader sees them.</li>
+<li>Whitespace separates forms. There is no parenthesis, comma, escape or
+  comment grammar.</li>
+<li><code>form</code> means a complete expression as the evaluator sees it. Argument
+  grouping is decided at run time by callee arity, not by punctuation.</li>
+</ul>
+<hr>
+<h2 id="1-source-envelope">1. Source envelope</h2>
+<p>The canonical host form is one outer block. The bare parser also accepts an
+unwrapped top-level sequence.</p>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;source&quot;] --&gt; B{&quot;first non-space byte&quot;}
+    B --&gt;|&quot;open bracket&quot;| C[&quot;block&quot;]
+    B --&gt;|&quot;anything else&quot;| D[&quot;top-item (ws* top-item)*&quot;]
+    C --&gt; E[&quot;parsed program block&quot;]
+    D --&gt; F[&quot;implicit top-level block&quot;]
+    C --&gt; G[&quot;trailing forms after this block are ignored&quot;]
+</code></pre>
+<p>The trailing-forms behaviour is an implementation quirk of <code>parse_program</code>
+(<code>r0_s1_runtime.c:3963-4002</code>). Canonical hosts wrap source as <code>[ ... ]</code>, so
+the whole cell is one block.</p>
+<pre><code class="language-mermaid">flowchart LR
+    S[&quot;source text&quot;] --&gt; H[&quot;host strips ;; line comments&quot;]
+    H --&gt; W[&quot;host may wrap as one outer block&quot;]
+    W --&gt; P[&quot;r0_s1_parse&quot;]
+    P --&gt; B[&quot;loader block&quot;]
+    B --&gt; R[&quot;r0_s1_run / r0_s1_run_persistent&quot;]
+</code></pre>
+<hr>
+<h2 id="2-item-and-form-alternatives">2. Item and form alternatives</h2>
+<p>The block/program loop recognises items. Only <code>parse_form</code> recognises the
+basic forms.</p>
+<pre><code class="language-mermaid">flowchart TD
+    I[&quot;item special cases (top-level omits func)&quot;] --&gt; Q{&quot;starts with double quote&quot;}
+    Q --&gt;|&quot;yes&quot;| STR[&quot;string literal&quot;]
+    Q --&gt;|&quot;no&quot;| K{&quot;exact token func, inside a block&quot;}
+    K --&gt;|&quot;yes&quot;| FUNC[&quot;func form&quot;]
+    K --&gt;|&quot;no&quot;| M{&quot;exact token masm or raw&quot;}
+    M --&gt;|&quot;yes&quot;| MASM[&quot;masm form&quot;]
+    M --&gt;|&quot;no&quot;| F[&quot;form&quot;]
+</code></pre>
+<pre><code class="language-mermaid">flowchart TD
+    F[&quot;form (parse_form)&quot;] --&gt; B{&quot;starts with open bracket&quot;}
+    B --&gt;|&quot;yes&quot;| BLK[&quot;block&quot;]
+    B --&gt;|&quot;no&quot;| N{&quot;starts with digit, or - then digit&quot;}
+    N --&gt;|&quot;yes&quot;| INT[&quot;integer&quot;]
+    N --&gt;|&quot;no&quot;| W[&quot;word token (may be a word form)&quot;]
+</code></pre>
+<p>The <code>func</code>, <code>masm</code> and <code>raw</code> tests happen before ordinary word parsing in
+<code>parse_block</code> (<code>r0_s1_runtime.c:764-886</code>). <code>parse_program</code> recognises
+<code>masm</code>/<code>raw</code> but <strong>not</strong> <code>func</code>; an unwrapped top-level <code>func</code> is an ordinary
+word. A string at <code>form</code> position (for example a <code>func</code> spec) is a word token,
+not a string literal.</p>
+<hr>
+<h2 id="3-block">3. Block</h2>
+<p>A block is a bracket-delimited sequence. Empty blocks are legal. Each string
+literal expands to two forms.</p>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;open bracket&quot;] --&gt; B{&quot;next non-space&quot;}
+    B --&gt;|&quot;close bracket&quot;| Z[&quot;block value&quot;]
+    B --&gt;|&quot;end of input&quot;| E[&quot;syntax error: unclosed block&quot;]
+    B --&gt;|&quot;string literal&quot;| S[&quot;mk-string + byte block (2 forms)&quot;]
+    B --&gt;|&quot;func&quot;| F[&quot;func form&quot;]
+    B --&gt;|&quot;masm or raw&quot;| M[&quot;masm form&quot;]
+    B --&gt;|&quot;other form&quot;| O[&quot;ordinary form&quot;]
+    S --&gt; L{&quot;form count reaches 512?&quot;}
+    F --&gt; L
+    M --&gt; L
+    O --&gt; L
+    L --&gt;|&quot;no&quot;| B
+    L --&gt;|&quot;yes&quot;| X[&quot;parse failure: too_large&quot;]
+</code></pre>
+<p>Form limit is 512 (<code>r0_s1_runtime.c:780</code>, <code>872</code>). A quoted string contributes
+two forms even when empty.</p>
+<hr>
+<h2 id="4-word-token-and-word-forms">4. Word token and word forms</h2>
+<p>The reader takes the longest run of non-whitespace bytes that excludes <code>[</code> and
+<code>]</code>, truncates it to 63 bytes, then applies the first matching rule.</p>
+<pre><code class="language-mermaid">flowchart TD
+    T[&quot;token (maximal run)&quot;] --&gt; TR[&quot;truncate to 63 bytes&quot;]
+    TR --&gt; N{&quot;exactly none?&quot;}
+    N --&gt;|&quot;yes&quot;| NONE[&quot;NONE literal&quot;]
+    N --&gt;|&quot;no&quot;| C{&quot;last byte is colon?&quot;}
+    C --&gt;|&quot;yes&quot;| SET[&quot;SET-WORD: name without final colon&quot;]
+    C --&gt;|&quot;no&quot;| G{&quot;first byte is colon?&quot;}
+    G --&gt;|&quot;yes&quot;| GET[&quot;GET-WORD: name after colon&quot;]
+    G --&gt;|&quot;no&quot;| L{&quot;first byte is apostrophe?&quot;}
+    L --&gt;|&quot;yes&quot;| LIT[&quot;LIT-WORD: name after apostrophe&quot;]
+    L --&gt;|&quot;no&quot;| WORD[&quot;WORD&quot;]
+    WORD --&gt; P{&quot;name currently a lexical parameter?&quot;}
+    P --&gt;|&quot;yes&quot;| BOUND[&quot;BOUND depth/slot fast path&quot;]
+    P --&gt;|&quot;no&quot;| PLAIN[&quot;WORD symbol id&quot;]
+</code></pre>
+<p>Order matters. <code>'x:</code> is a SET-WORD (trailing colon wins) whose name is <code>'x</code>.
+<code>none</code> is the only special token; <code>none:</code>, <code>:none</code> and <code>'none</code> are word forms.</p>
+<p>Evaluation of word forms:</p>
+<pre><code class="language-mermaid">flowchart LR
+    S[&quot;SET-WORD&quot;] --&gt; AS[&quot;evaluate one expression; assign nearest binding or create local&quot;]
+    G[&quot;GET-WORD&quot;] --&gt; LK[&quot;lookup; return value without invoking&quot;]
+    L[&quot;LIT-WORD&quot;] --&gt; WO[&quot;return plain WORD value&quot;]
+    W[&quot;WORD/BOUND&quot;] --&gt; D[&quot;lookup or direct slot read; invoke callable result&quot;]
+</code></pre>
+<hr>
+<h2 id="5-integer">5. Integer</h2>
+<pre><code class="language-mermaid">flowchart LR
+    A[&quot;optional -&quot;] --&gt; B[&quot;one or more decimal digits&quot;]
+    B --&gt; C[&quot;INT payload&quot;]
+</code></pre>
+<p>No <code>+</code> sign, no decimal point, no exponent, no hex, no underscores.</p>
+<hr>
+<h2 id="6-string-literal">6. String literal</h2>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;double quote&quot;] --&gt; B{&quot;next byte&quot;}
+    B --&gt;|&quot;double quote&quot;| Z[&quot;end literal&quot;]
+    B --&gt;|&quot;end of input&quot;| E[&quot;syntax error: unterminated string&quot;]
+    B --&gt;|&quot;any byte, including backslash and newline&quot;| C[&quot;append byte&quot;]
+    C --&gt; D{&quot;already 512 bytes?&quot;}
+    D --&gt;|&quot;yes&quot;| X[&quot;parse failure: too_large&quot;]
+    D --&gt;|&quot;no&quot;| B
+    Z --&gt; M[&quot;emit mk-string&quot;]
+    M --&gt; BL[&quot;emit block of tagged byte integers&quot;]
+</code></pre>
+<p>There is no escape syntax: <code>"</code> always ends the literal. The expansion is
+<code>mk-string [b0 b1 ...]</code>, so the literal costs two forms and needs a
+<code>mk-string</code> binding at run time.</p>
+<hr>
+<h2 id="7-func-form">7. <code>func</code> form</h2>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;func (inside block)&quot;] --&gt; B[&quot;spec via parse_form (block, integer or word)&quot;]
+    B --&gt; C{&quot;is the next non-space byte an open bracket&quot;}
+    C --&gt;|&quot;yes&quot;| D[&quot;parse literal body block under a fresh func site/scope&quot;]
+    C --&gt;|&quot;no&quot;| E[&quot;leave the body expression in the enclosing form stream&quot;]
+    D --&gt; F[&quot;emit func, spec, body&quot;]
+    E --&gt; F
+</code></pre>
+<p>This <code>func</code> special case applies only inside a block. In an unwrapped
+top-level source the word <code>func</code> is not special-cased. At run time <code>func</code>
+evaluates the spec expression and the body expression. The body must evaluate
+to a block. The spec block's element count is the arity.
+Literal and computed bodies have different lexical capture rules
+(<code>GLON-LANGUAGE-SPEC.md</code> §3.5).</p>
+<hr>
+<h2 id="8-masm-raw-form">8. <code>masm</code> / <code>raw</code> form</h2>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;masm or raw&quot;] --&gt; B{&quot;next non-space is a digit?&quot;}
+    B --&gt;|&quot;yes&quot;| C[&quot;parse non-negative arity integer&quot;]
+    B --&gt;|&quot;no&quot;| D[&quot;arity defaults to 0&quot;]
+    C --&gt; E{&quot;next non-space is an open bracket&quot;}
+    D --&gt; E
+    E --&gt;|&quot;no&quot;| X[&quot;syntax error&quot;]
+    E --&gt;|&quot;yes&quot;| F[&quot;tokenize private masm block&quot;]
+    F --&gt; G{&quot;tokens at most 511, labels at most 64, refs at most 128, code fits?&quot;}
+    G --&gt;|&quot;no&quot;| Y[&quot;parse failure: too_large&quot;]
+    G --&gt;|&quot;yes&quot;| H[&quot;record callable entry and arity for deferred emission&quot;]
+</code></pre>
+<p>The <code>masm</code>/<code>raw</code> keyword must be the whole maximal token; <code>masm1</code> is an
+ordinary word. The optional arity is recognised only as a non-negative decimal
+integer after whitespace. The masm block is not Glon. Its mnemonics, operands
+and labels are not interned and do not participate in Glon binding. The callable is a RAW value
+with layout <code>[entry, arity]</code>.</p>
+<hr>
+<h2 id="9-evaluation-grouping-arity-grammar">9. Evaluation grouping (arity grammar)</h2>
+<p>There is no lexical grammar for grouping. The evaluator's arity determines
+which following forms belong to a call.</p>
+<pre><code class="language-mermaid">flowchart TD
+    E[&quot;expression stream&quot;] --&gt; S[&quot;evaluate one form (subexpression)&quot;]
+    S --&gt; V{&quot;result is callable?&quot;}
+    V --&gt;|&quot;native&quot;| N[&quot;consume N arity expressions, each a subexpression&quot;]
+    V --&gt;|&quot;closure&quot;| C[&quot;consume closure arity expressions, each a subexpression&quot;]
+    V --&gt;|&quot;RAW&quot;| R[&quot;consume RAW arity expressions, each a subexpression&quot;]
+    V --&gt;|&quot;func keyword&quot;| F[&quot;consume spec and body expressions&quot;]
+    V --&gt;|&quot;set-word&quot;| A[&quot;consume one expression&quot;]
+    V --&gt;|&quot;return&quot;| T[&quot;consume one expression, then unwind&quot;]
+    V --&gt;|&quot;other value&quot;| X[&quot;the value is the result&quot;]
+    N --&gt; O[&quot;evaluate call, leave result set&quot;]
+    C --&gt; O
+    R --&gt; O
+    F --&gt; O
+    A --&gt; O
+    T --&gt; U[&quot;non-local return&quot;]
+    X --&gt; O
+</code></pre>
+<p>Examples:</p>
+<pre><code class="language-glon">+ 1 * 2 3          ;; + 1 (* 2 3)      =&gt; 7
+double double 5    ;; double (double 5)
+f 1 2              ;; f consumes two expressions
+values [10 20]     ;; one expression yielding two results
+</code></pre>
+<hr>
+<h2 id="10-parse-trees-for-representative-sources">10. Parse trees for representative sources</h2>
+<pre><code class="language-text">x: 5
++ x 3
+</code></pre>
+<pre><code class="language-mermaid">flowchart TD
+    P[&quot;program block&quot;] --&gt; S1[&quot;SET-WORD x&quot;]
+    P --&gt; C[&quot;+ call&quot;]
+    S1 --&gt; I[&quot;INT 5&quot;]
+    C --&gt; W[&quot;WORD x&quot;]
+    C --&gt; I3[&quot;INT 3&quot;]
+</code></pre>
+<pre><code class="language-text">double: func [x] [ * x 2 ]
+double 21
+</code></pre>
+<pre><code class="language-mermaid">flowchart TD
+    P[&quot;program block&quot;] --&gt; S[&quot;SET-WORD double&quot;]
+    P --&gt; C[&quot;call double&quot;]
+    S --&gt; F[&quot;func form&quot;]
+    F --&gt; SP[&quot;spec block x&quot;]
+    F --&gt; B[&quot;body block * x 2&quot;]
+    C --&gt; I[&quot;INT 21&quot;]
+</code></pre>
+<pre><code class="language-text">case [ [&lt; n 10] [ 'small ] [1] [ 'large ] ]
+</code></pre>
+<pre><code class="language-mermaid">flowchart TD
+    C[&quot;case call&quot;] --&gt; A[&quot;cases block&quot;]
+    A --&gt; R1[&quot;row 1: condition block and action block&quot;]
+    A --&gt; R2[&quot;row 2: condition block and action block&quot;]
+    R1 --&gt; C1[&quot;condition less than n 10&quot;]
+    R1 --&gt; A1[&quot;action 'small&quot;]
+    R2 --&gt; C2[&quot;condition 1 (catch-all)&quot;]
+    R2 --&gt; A2[&quot;action 'large&quot;]
+</code></pre>
+<p><code>case</code> is ordinary library code. Its clauses are data blocks; it turns them
+into zero-argument closures at run time.</p>
+<hr>
+<h2 id="11-consolidated-ebnf">11. Consolidated EBNF</h2>
+<pre><code class="language-ebnf">source         = ws* ( block trailing-tail | top-item ( ws* top-item )* ws* ) ;
+trailing-tail  = any-byte* ;              (* ignored after a leading block *)
+top-item       = string | masm-form | form ;
+block          = &quot;[&quot; ( ws | block-item )* &quot;]&quot; ;
+block-item     = string | func-form | masm-form | form ;
+form           = block | integer | word ;
+func-form      = &quot;func&quot; form block? ;     (* body may be left to the next item *)
+masm-form      = ( &quot;masm&quot; | &quot;raw&quot; ) ( ws+ digit+ )? ws* masm-block ;
+masm-block     = &quot;[&quot; masm-tokens &quot;]&quot; ;
+string         = '&quot;' non-quote-byte* '&quot;' ;          (* item-start only; 0..512 bytes *)
+integer        = [ &quot;-&quot; ] digit+ ;
+word           = token ;
+word-value     = &quot;none&quot; | token &quot;:&quot; | &quot;:&quot; token | &quot;'&quot; token | token ;
+token          = token-byte+ ;            (* reader keeps the first 63 bytes *)
+token-byte     = ? any byte except whitespace, &quot;[&quot; or &quot;]&quot; ? ;
+non-quote-byte = ? any byte except double quote ? ;
+any-byte       = ? any byte 0..255 ? ;
+masm-tokens    = ? private S1 macro-assembly tokens ? ;
+digit          = &quot;0&quot; | &quot;1&quot; | &quot;2&quot; | &quot;3&quot; | &quot;4&quot; | &quot;5&quot; | &quot;6&quot; | &quot;7&quot; | &quot;8&quot; | &quot;9&quot; ;
+ws             = &quot; &quot; | &quot;\t&quot; | &quot;\n&quot; | &quot;\r&quot; | &quot;\v&quot; | &quot;\f&quot; ;
+</code></pre>
+<p>Keyword alternatives apply only when the whole maximal token is exactly
+<code>func</code>, <code>masm</code> or <code>raw</code>; <code>funcx</code> is a word. <code>func</code> is special-cased by
+<code>parse_block</code>, not by <code>parse_program</code>, so an unwrapped top-level <code>func</code> is an
+ordinary word. A quote at item start is a string; a quote inside <code>form</code>
+(spec/body position) is part of a word token. The EBNF describes lexical
+acceptance only. It does not describe arity grouping, function capture, result
+sets or failure behaviour; those are in <code>GLON-EVALUATION-MODEL.md</code> and
+<code>GLON-LANGUAGE-SPEC.md</code>.</p>
+<hr>
+<h2 id="12-implemented-lexical-quirks-worth-remembering">12. Implemented lexical quirks worth remembering</h2>
+<table>
+<thead>
+<tr>
+<th>Quirk</th>
+<th>Effect</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Token truncation at 63 bytes</td>
+<td>two long names can intern to one symbol</td>
+</tr>
+<tr>
+<td><code>[</code> first in source</td>
+<td>only that block is parsed; trailing forms ignored</td>
+</tr>
+<tr>
+<td>Unwrapped top-level <code>func</code></td>
+<td><code>parse_program</code> does not assign a fresh func site/lexical scope; canonical hosts wrap source in one block</td>
+</tr>
+<tr>
+<td><code>;;</code> stripped by host, not reader</td>
+<td><code>;;</code> inside a string is also removed</td>
+</tr>
+<tr>
+<td>String literal expands to <code>mk-string [...]</code></td>
+<td>needs library/prelude binding; costs 2 forms</td>
+</tr>
+<tr>
+<td>No escapes</td>
+<td><code>"</code> cannot appear inside a string</td>
+</tr>
+<tr>
+<td><code>none</code> is a literal token</td>
+<td><code>none:</code> does not affect plain <code>none</code></td>
+</tr>
+<tr>
+<td>Trailing colon wins</td>
+<td><code>'x:</code> is a set-word named <code>'x</code></td>
+</tr>
+<tr>
+<td>No parentheses</td>
+<td>grouping is entirely arity-driven</td>
+</tr>
+<tr>
+<td>Single <code>;</code> is ordinary</td>
+<td>only doubled <code>;;</code> is a host comment</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="13-diagram-to-ebnf-map">13. Diagram-to-EBNF map</h2>
+<table>
+<thead>
+<tr>
+<th>Diagram</th>
+<th>EBNF production</th>
+<th>Accuracy notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>§1 Source envelope</td>
+<td><code>source</code>, <code>trailing-tail</code></td>
+<td>A leading block ignores all trailing bytes; an unwrapped source is a sequence of top-items.</td>
+</tr>
+<tr>
+<td>§2 Item alternatives</td>
+<td><code>top-item</code>, <code>block-item</code></td>
+<td><code>func</code> is an item only inside a block; top-level <code>func</code> is a word.</td>
+</tr>
+<tr>
+<td>§2 Form alternatives</td>
+<td><code>form</code></td>
+<td><code>parse_form</code> accepts block, integer or word only; no string, <code>func</code> or <code>masm</code> special case.</td>
+</tr>
+<tr>
+<td>§3 Block</td>
+<td><code>block</code>, <code>block-item</code></td>
+<td>Empty blocks accepted; 512-form limit; a string contributes two forms.</td>
+</tr>
+<tr>
+<td>§4 Word forms</td>
+<td><code>word</code>, <code>token</code>, <code>word-value</code></td>
+<td>Token is maximal and truncated to 63 bytes before the first-match word rules.</td>
+</tr>
+<tr>
+<td>§5 Integer</td>
+<td><code>integer</code></td>
+<td>Optional <code>-</code>, decimal digits only.</td>
+</tr>
+<tr>
+<td>§6 String</td>
+<td><code>string</code></td>
+<td>Item-start only; no escapes; 512-byte limit; expands to <code>mk-string</code> plus a byte block.</td>
+</tr>
+<tr>
+<td>§7 Func</td>
+<td><code>func-form</code></td>
+<td>Only inside a block; optional literal body block; computed body left in the stream.</td>
+</tr>
+<tr>
+<td>§8 Masm</td>
+<td><code>masm-form</code></td>
+<td>Exact keyword token; optional non-negative arity; private masm block.</td>
+</tr>
+<tr>
+<td>§9 Grouping</td>
+<td>none</td>
+<td>Grouping is an evaluation rule, not a lexical production.</td>
+</tr>
+</tbody>
+</table>
+</main>
+<footer>Generated from the pinned upstream Markdown at <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code>. The original Markdown is preserved under <a href="../source/">source/</a>.</footer>
+
+<script src="../assets/mermaid.min.js"></script>
+<script>
+(function () {
+  function render() {
+    var blocks = document.querySelectorAll('pre > code.language-mermaid');
+    if (!blocks.length || !window.mermaid) return;
+    blocks.forEach(function (code) {
+      var div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = code.textContent;
+      code.parentElement.replaceWith(div);
+    });
+    var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    window.mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: dark ? 'dark' : 'default' });
+    window.mermaid.run({ querySelector: '.mermaid' }).catch(function (err) {
+      console.error('Mermaid render failed', err);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
+  else render();
+})();
+</script>
+
+</body>
+</html>

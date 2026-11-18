@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Host ABI</title>
+<style>
+:root { --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+        --accent:#2456a6; --code:#20262e; --ok:#1b6b42; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --code:#242a32; --ok:#7ad6a2; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:1040px; padding:0 16px 4rem; color:var(--fg); background:var(--bg);
+       font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3,h4 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .4rem; }
+h2 { font-size:clamp(1.25rem,3vw,1.55rem); margin:2.2rem 0 .6rem; }
+h3 { font-size:1.1rem; margin:1.6rem 0 .4rem; }
+p { margin:.55rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:inherit; overflow-wrap:normal; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.75rem 0; border-bottom:1px solid var(--line); margin-bottom:1.4rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover, .navlinks a:focus-visible { color:var(--accent); text-decoration:underline; }
+.pagelead { display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; margin:0 0 1rem;
+            font-size:.86rem; color:var(--muted); }
+.pagelead a { font-weight:600; }
+table { border-collapse:collapse; width:100%; margin:.8rem 0 1.2rem; font-size:.92rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .55rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+blockquote { border-left:3px solid var(--line); margin:1rem 0; padding:.5rem 1rem; color:var(--muted); background:var(--panel); }
+ul,ol { padding-left:1.4rem; }
+li { margin:.2rem 0; }
+.mermaid { overflow-x:auto; text-align:center; margin:1.2rem 0; }
+.mermaid svg { max-width:100%; height:auto; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; margin:1rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card h3 { margin:.1rem 0 .35rem; }
+.card p:last-child { margin-bottom:0; }
+.source-list { font-size:.9rem; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem; }
+@media (max-width:560px) {
+  body { padding:0 14px 3rem; }
+  .topnav { align-items:flex-start; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Site navigation">
+  <a class="brand" href="../">Glon</a>
+  <div class="navlinks">
+    <a href="../">Home</a>
+    <a href="index.html">Language</a>
+    <a href="../grammar/">Grammar</a>
+    <a href="../#challenges">Challenges</a>
+  </div>
+</nav>
+<main>
+<div class="pagelead"><a href="../source/GLON-HOST-ABI.md">View Markdown source</a> <span>Upstream commit <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></span></div>
+<h1 id="glon-host-abi">Glon Host ABI</h1>
+<p><strong>Status:</strong> current/provisional. This document describes the boundary between
+Glon programs and host-provided functionality as implemented in this
+repository. It does not create a frozen ABI and does not add host operations
+to the language.</p>
+<h2 id="provenance-and-relationship-to-the-original-abi-document">Provenance and relationship to the original ABI document</h2>
+<p>A repository-wide search (working trees, reachable history, unreachable Git
+objects, and the main worktree) found <strong>no artifact that names Rebolek</strong>. The
+only non-specification local mention of Rebolek is an unrelated project note
+outside this repository (<code>glon-memory-handoff-2026-10-10.md</code>). Therefore no
+claim is made here that a particular file was "prepared for Rebolek".</p>
+<p>The original ABI document in this repository is:</p>
+<ul>
+<li><code>GLON-WASM-ABI.md</code>, added in commit <code>e2edb0086664a7ad44c1487299933cda365d80a2</code>
+  ("Document the Glon WASM ABI", 2026-10-06). Its host-allocation lifetime
+  contract was established immediately before it by commit
+  <code>3f5780037a09069c24413b3c41015819049be22e</code> ("Fix transient Glon WASM ABI
+  allocation lifetime", 2026-10-05), tagged <code>glon-wasm-abi-d11.6</code>.</li>
+</ul>
+<p>This <code>GLON-HOST-ABI.md</code> is a <strong>derivative summary plus native/C boundary
+guide</strong>, not a replacement. For the WASM binary interface, <code>GLON-WASM-ABI.md</code>
+remains the detailed reference; where the two differ, that document and
+<code>standalone/glon.c</code> win. The comparison is recorded in
+<code>GLON-SPEC-VERIFICATION.md</code> §2.</p>
+<hr>
+<p>Authoritative sources:</p>
+<ul>
+<li><code>GLON-WASM-ABI.md</code> — the detailed WASM boundary.</li>
+<li><code>r0_s1.h</code> — C API declarations and outcome constants.</li>
+<li><code>r0_s1_session.c</code>, <code>r0_s1_show.c</code> — native session facade and outcome text.</li>
+<li><code>standalone/glon.c</code> — WASM exports/imports.</li>
+<li><code>r0_s1_g1a.h</code>, <code>r0_s1_g1a.c</code>, <code>r0_s1_g1a_live.c</code> — route/event and live
+  request dispatch.</li>
+<li><code>glon.c</code> — native CLI.</li>
+<li><code>desktop/glon_host.h</code> — desktop OS boundary.</li>
+<li><code>GLON-HOST-CAPABILITIES.md</code>, <code>GLON-APP-MODEL.md</code> — host/application policy.</li>
+</ul>
+<p>The runtime is one global machine (<code>M[65536]</code>) with no locking. Calls must be
+serialised.</p>
+<hr>
+<h2 id="1-portable-language-vs-host-specific-capability">1. Portable language vs host-specific capability</h2>
+<table>
+<thead>
+<tr>
+<th>Area</th>
+<th>Portable Glon?</th>
+<th>Where</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Values, words, blocks, contexts, closures, SIN!</td>
+<td>yes</td>
+<td>language laws</td>
+</tr>
+<tr>
+<td>Arithmetic, comparison, <code>print</code></td>
+<td>yes, ordinary R0 natives over frozen S1 <code>HOST</code></td>
+<td><code>s1.c:134-160</code></td>
+</tr>
+<tr>
+<td>Allocation, raw diagnostics</td>
+<td>only through <code>masm</code>/<code>raw</code> or host setup, not ordinary vocabulary</td>
+<td><code>s1.c</code> <code>HOST_ALLOC</code>/<code>HOST_DUMP</code></td>
+</tr>
+<tr>
+<td>String literals <code>"..."</code></td>
+<td>syntax is portable; the <code>mk-string</code> word is library</td>
+<td>prelude/common</td>
+</tr>
+<tr>
+<td><code>case</code>, <code>parse</code>, <code>s/</code> strings, tasks</td>
+<td>shipped Glon libraries, optional per session</td>
+<td><code>demo/shop/*.glon</code></td>
+</tr>
+<tr>
+<td>Source loading and comments</td>
+<td>host convention</td>
+<td>native session, WASM loader, CLI</td>
+</tr>
+<tr>
+<td>Browser route/event dispatch</td>
+<td>host convention</td>
+<td>G1A / browser host</td>
+</tr>
+<tr>
+<td>DOM/HTML/canvas presentation</td>
+<td>host-specific</td>
+<td>browser host</td>
+</tr>
+<tr>
+<td>Files, network, processes, time, randomness</td>
+<td>host-specific capability</td>
+<td><code>GLON-HOST-CAPABILITIES.md</code>, desktop host</td>
+</tr>
+<tr>
+<td>WASM exports <code>glon_*</code></td>
+<td>host-specific binary interface</td>
+<td><code>standalone/glon.c</code></td>
+</tr>
+<tr>
+<td>OS boundary <code>glon_host.h</code></td>
+<td>host-specific C interface</td>
+<td><code>desktop/</code></td>
+</tr>
+</tbody>
+</table>
+<p>The rule is: <strong>Glon decides; the host moves bytes; the browser presents.</strong> A
+host may provide a semantic capability (open a file, make a request), but it
+must not contain application routing or domain rules.</p>
+<hr>
+<h2 id="2-native-c-embedding-api">2. Native C embedding API</h2>
+<p>Declarations are in <code>r0_s1.h</code>. These functions are the loader/toolchain and
+session boundary, not a second evaluator.</p>
+<h3 id="21-core-lifecycle">2.1 Core lifecycle</h3>
+<pre><code class="language-c">cell r0_s1_init(void);
+cell r0_s1_parse(const char *src, int *err);
+int  r0_s1_run(cell block);              /* fresh transient stacks */
+int  r0_s1_run_persistent(cell block);   /* preserve managed heap */
+int  r0_s1_parse_error_kind(void);
+</code></pre>
+<ul>
+<li><code>r0_s1_init</code> resets loader/global state, emits the evaluator and returns the
+  main entry. Call once per machine.</li>
+<li><code>r0_s1_parse</code> parses source into a loader block. On failure it sets <code>*err</code>,
+  records a kind retrievable with <code>r0_s1_parse_error_kind</code>, and rolls back
+  loader heap, symbols and sites. The returned value is then NONE and must
+  not be run.</li>
+<li><code>r0_s1_run</code> resets transient stacks/registers and the managed heap frontier.
+  <code>r0_s1_run_persistent</code> preserves the managed heap frontier so definitions,
+  strings and closures survive across calls. Both reset the current context to
+  the global context and clear the frame chain.</li>
+<li><code>r0_s1_run</code> returns the result count derived from the top of the data stack.
+  Do not use the return value alone to decide success: use
+  <code>r0_s1_ran_cleanly</code>, <code>r0_s1_uncaught_error</code> or the session outcome. Read
+  results with <code>r0_s1_result</code>.</li>
+</ul>
+<h3 id="22-result-error-and-resource-introspection">2.2 Result, error and resource introspection</h3>
+<pre><code class="language-c">cell r0_s1_result(int i, int N);          /* 0-based i */
+int  r0_s1_ran_cleanly(void);
+int  r0_s1_uncaught_error(cell *type, cell *id, cell *arg);
+int  r0_s1_stack_sentry_fired(void);
+int  r0_s1_halt_reason(void);
+void r0_s1_global_usage(cell *count, cell *cap);
+const char *r0_s1_sym_name(cell id);
+</code></pre>
+<ul>
+<li><code>r0_s1_ran_cleanly</code> is true iff the run reached the normal halt.</li>
+<li><code>r0_s1_uncaught_error</code> returns 1 and fills the SIN! fields only when an
+  uncaught SIN! ended the run.</li>
+<li><code>r0_s1_halt_reason</code> returns a <code>R0S1_HALT_*</code> value:
+  <code>NONE</code>, <code>CONTEXT_FULL</code>, <code>GC_WORKLIST_FULL</code>, <code>DS_EXHAUSTED</code>, <code>DS_UNDERFLOW</code>.</li>
+<li><code>r0_s1_stack_sentry_fired</code> reports a detected stack-bound violation.</li>
+<li><code>r0_s1_global_usage</code> reports global binding count and capacity.</li>
+<li><code>r0_s1_sym_name</code> maps a symbol id to its spelling (or null).</li>
+</ul>
+<p>Instrumentation-only accessors include <code>r0_s1_sp_start</code>, <code>r0_s1_sp_end</code>,
+<code>r0_s1_rp_start</code>, <code>r0_s1_rp_end</code>, <code>r0_s1_sp_min</code>, <code>r0_s1_rp_min</code>,
+<code>r0_s1_host_calls</code>, <code>r0_s1_code_size</code>, and the GC diagnostics.</p>
+<h3 id="23-session-facade">2.3 Session facade</h3>
+<pre><code class="language-c">enum {
+    R0S1_OUT_OK = 0,
+    R0S1_OUT_PARSE_ERROR = 1,
+    R0S1_OUT_RESOURCE_ERROR = 2,
+    R0S1_OUT_UNCAUGHT_SIN = 3,
+    R0S1_OUT_HALT = 4
+};
+
+typedef struct {
+    int status, detail;
+    int count;                    /* OK: number of results */
+    cell sin_type, sin_id, sin_arg;
+} r0_s1_outcome;
+</code></pre>
+<pre><code class="language-c">int r0_s1_session_run(const char *src, unsigned int len, r0_s1_outcome *out);
+int r0_s1_session_run_block(cell prog, r0_s1_outcome *out);
+void r0_s1_session_parse_error(r0_s1_outcome *out);
+const char *r0_s1_outcome_status_name(int status);
+const char *r0_s1_outcome_detail_name(int detail);
+</code></pre>
+<p><code>r0_s1_session_run</code> is the canonical native cell runner:</p>
+<ul>
+<li>It strips <code>;;</code> line comments.</li>
+<li>It wraps the cell as <code>[ src ]</code>.</li>
+<li>It parses and runs persistently.</li>
+<li>It classifies the outcome from structured runtime state, never by inspecting
+  rendered text.</li>
+<li>It does not mutate earlier definitions; a failed parse consumes nothing.</li>
+</ul>
+<p>Detail values: <code>none</code>, <code>syntax</code>, <code>too_large</code>, <code>symbol_table_full</code>,
+<code>loader_exhausted</code>, <code>site_table_full</code>, <code>context_full</code>, <code>stack_sentry</code>,
+<code>machine</code>, <code>gc_worklist_full</code>.</p>
+<h3 id="24-text-outcome">2.4 Text outcome</h3>
+<pre><code class="language-c">int r0_s1_show_run(const char *src, unsigned int len, char *out, int cap);
+int r0_s1_mold(cell v, char *out, int cap);
+</code></pre>
+<p><code>r0_s1_show_run</code> strips comments, wraps <code>[ src ]</code>, runs persistently, and
+formats the real results. It emits exactly the text the browser primer shows:</p>
+<ul>
+<li>clean run: molded results separated by one space; no results: <code>none</code>;</li>
+<li>uncaught SIN!: <code>** uncaught #[SIN! type id arg]</code>;</li>
+<li>context full: <code>** halted: context full (no SIN!: a machine-level fail-stop)</code>;</li>
+<li>other halt: <code>** halted (no SIN!: a machine-level fail-stop)</code>;</li>
+<li>parse error: <code>** parse error</code>.</li>
+</ul>
+<p><code>r0_s1_mold</code> is deliberately minimal: integers, NONE, word forms, nested
+blocks, strings, SIN!, and opaque <code>#[...]</code> for closures/natives/RAW/contexts.</p>
+<h3 id="25-g1a-routeevent-bridge">2.5 G1A route/event bridge</h3>
+<p>Declared in <code>r0_s1_g1a.h</code> and implemented in <code>r0_s1_g1a.c</code>:</p>
+<pre><code class="language-c">int r0_s1_g1a_render_fragment(cell fragment, char *out, int cap, int *out_len);
+int r0_s1_g1a_route(const char *token, char *out, int cap, int *out_len);
+int r0_s1_g1a_event(const char *token, char *out, int cap, int *out_len);
+int r0_s1_g1a_event_value(const char *token, const char *value,
+                          char *out, int cap, int *out_len);
+</code></pre>
+<ul>
+<li><code>render-fragment</code> evaluates embedded Glon in a bundled byte-list fragment.</li>
+<li><code>route</code> binds <code>current-route</code> to the token word, runs the application's
+  <code>route</code> block, then renders the selected fragment.</li>
+<li><code>event</code> binds <code>current-event</code> only.</li>
+<li><code>event_value</code> also binds <code>current-value</code> to a managed STRING! built with the
+  loaded program's <code>mk-string</code>.</li>
+<li>The application's routing and event meanings remain in Glon; C only supplies
+  the token/value and invokes the renderer.</li>
+<li>Tokens are length-checked by the WASM host layer; the G1A route/event layer
+  performs the delimiter check and reports a failure as <code>-2</code>.</li>
+</ul>
+<p>The GLON_LIVE variant (<code>r0_s1_g1a_live_*</code>) adds request-fragment extraction and
+<code>glon_event_bytes</code>; it is experimental.</p>
+<h3 id="26-c-integration-invariants">2.6 C integration invariants</h3>
+<ul>
+<li>One machine per process/instance. Calls are serialised; there is no locking.</li>
+<li>Do not call Glon exports re-entrantly from a host callback.</li>
+<li>Do not mutate <code>M[]</code> except for documented driver seed cells (M1 main entry,
+  scheduler, task table, datatype seeding). Those are host/driver setup, not
+  application semantics.</li>
+<li>Do not retain a <code>glon_alloc</code> pointer across an execution entry.</li>
+<li>A parse failure is recoverable; a machine fail-stop ends the run but leaves
+  the session process alive in the native hosts.</li>
+</ul>
+<hr>
+<h2 id="3-native-command-line-runner">3. Native command-line runner</h2>
+<p>Built from <code>glon.c</code>:</p>
+<pre><code class="language-text">glon FILE...
+</code></pre>
+<ul>
+<li>Initialises one runtime, loads <code>glon-lib/prelude.glon</code> and
+  <code>glon-lib/strings.glon</code> from beside the executable, then runs each FILE in
+  the same persistent session, so definitions carry across files.</li>
+<li>Accepts ordinary Glon source, optionally wrapped in one outer <code>[ ... ]</code>.
+  <code>;;</code> line comments are stripped.</li>
+<li>Prints the final results (not NONE-only) to stdout.</li>
+<li>Exit status: 0 all files clean; 1 a parse/SIN!/resource/machine error; 2
+  usage, IO or library failure.</li>
+<li>It has no host extension point: every argument is a file. Host-backed
+  experiments (<code>glon-web</code>) are separate executables.</li>
+</ul>
+<p>The Jupyter kernel host (<code>jupyter/host/glon_kernel_host.c</code>) is another native
+session host. It uses the same session facade and adds notebook persistence,
+not language semantics.</p>
+<hr>
+<h2 id="4-webassembly-abi">4. WebAssembly ABI</h2>
+<p><strong>Current/provisional; no version constant or compatibility guarantee.</strong>
+<code>GLON-WASM-ABI.md</code> is the detailed reference. The source of truth is
+<code>standalone/glon.c</code>; the browser hosts are examples.</p>
+<h3 id="41-module-variants">4.1 Module variants</h3>
+<table>
+<thead>
+<tr>
+<th>Build</th>
+<th>Artifact</th>
+<th>Host imports</th>
+<th>Extra exports</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>W2 standalone</td>
+<td><code>standalone/glon.wasm</code></td>
+<td><code>host_print</code>, <code>host_set_text</code></td>
+<td>common set</td>
+</tr>
+<tr>
+<td>G1A shop</td>
+<td><code>demo/shop/glon.wasm</code></td>
+<td>four: <code>host_print</code>, <code>host_set_text</code>, <code>host_set_html</code>, <code>host_canvas_script</code></td>
+<td><code>glon_route</code>, <code>glon_event</code>, <code>glon_event_value</code></td>
+</tr>
+<tr>
+<td>GLON_LIVE</td>
+<td><code>demo/shop/glon-live.wasm</code> (<code>-DGLON_LIVE</code>)</td>
+<td>five: the four plus <code>host_call</code></td>
+<td>the three plus <code>glon_event_bytes</code></td>
+</tr>
+</tbody>
+</table>
+<p>Common exports: <code>glon_alloc</code>, <code>glon_init</code>, <code>glon_load</code>, <code>glon_call</code>,
+<code>glon_run</code>, <code>glon_result_ptr</code>, <code>glon_result_len</code>, <code>memory</code>.</p>
+<p>The committed <code>standalone/glon.wasm</code> binary predates <code>glon_run</code>/<code>glon_result_*</code>
+and the <code>masm</code> rename. Rebuild it with <code>make wasm-standalone</code> before testing;
+the source and the G1A/GLON_LIVE modules are authoritative.</p>
+<h3 id="42-exports">4.2 Exports</h3>
+<p>On wasm32, all signatures use <code>i32</code>; pointers are byte offsets into the
+exported linear memory.</p>
+<table>
+<thead>
+<tr>
+<th>Export</th>
+<th>Signature</th>
+<th>Purpose</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>glon_alloc</code></td>
+<td><code>(len) -&gt; ptr</code></td>
+<td>allocate transient host→WASM bytes; 0 on failure</td>
+</tr>
+<tr>
+<td><code>glon_init</code></td>
+<td><code>() -&gt; 0</code></td>
+<td>initialise once; idempotent; seeds M1 scheduler cells</td>
+</tr>
+<tr>
+<td><code>glon_load</code></td>
+<td><code>(src, len) -&gt; 0/-1/-2/-3</code></td>
+<td>parse and extend the persistent machine</td>
+</tr>
+<tr>
+<td><code>glon_call</code></td>
+<td><code>(name, len) -&gt; 0/-1/-2/-3</code></td>
+<td>run <code>[ do NAME ]</code> in a fresh transient run</td>
+</tr>
+<tr>
+<td><code>glon_route</code></td>
+<td><code>(token, len) -&gt; 0/-1/-2</code></td>
+<td>bind <code>current-route</code>, run <code>route</code>, render</td>
+</tr>
+<tr>
+<td><code>glon_event</code></td>
+<td><code>(token, len) -&gt; 0/-1/-2</code></td>
+<td>bind <code>current-event</code>, run <code>do-event</code>, render</td>
+</tr>
+<tr>
+<td><code>glon_event_value</code></td>
+<td><code>(token, tlen, value, vlen) -&gt; 0/-1/-2</code></td>
+<td>also bind <code>current-value</code> as STRING!</td>
+</tr>
+<tr>
+<td><code>glon_event_bytes</code></td>
+<td><code>(token, tlen, data, dlen) -&gt; 0/-1/-2</code></td>
+<td>GLON_LIVE raw bytes; NUL allowed</td>
+</tr>
+<tr>
+<td><code>glon_run</code></td>
+<td><code>(src, len) -&gt; 0/-1</code></td>
+<td>run one program and format outcome text</td>
+</tr>
+<tr>
+<td><code>glon_result_ptr</code></td>
+<td><code>() -&gt; ptr</code></td>
+<td>pointer to static result text</td>
+</tr>
+<tr>
+<td><code>glon_result_len</code></td>
+<td><code>() -&gt; len</code></td>
+<td>length of result text</td>
+</tr>
+</tbody>
+</table>
+<p>Error codes:</p>
+<ul>
+<li><code>glon_alloc</code>: 0 = arena exhausted; otherwise a pointer.</li>
+<li><code>glon_load</code>: -1 source too long (&gt;= 16 KiB), -2 parse error, -3 run failure.</li>
+<li><code>glon_call</code>: -1 bad name length (0 or &gt; 60), -2 parse error, -3 run failure.</li>
+<li><code>glon_route</code>/<code>glon_event</code>: -1 zero/oversized token (max 63), -2 dispatch
+  failure.</li>
+<li><code>glon_event_value</code>: -1 bad token or value &gt; 200 bytes, -2 dispatch failure.</li>
+<li><code>glon_event_bytes</code>: -1 bad token, -2 dispatch failure (including data &gt;
+  12000 bytes).</li>
+<li><code>glon_run</code>: -1 source too long; on 0 the text is set in every case,
+  including parse errors, uncaught SIN! and halts.</li>
+</ul>
+<h3 id="43-host-imports">4.3 Host imports</h3>
+<table>
+<thead>
+<tr>
+<th>Import</th>
+<th>Signature</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>env.host_print</code></td>
+<td><code>(ptr, len) -&gt; ()</code></td>
+<td>plain text/log output</td>
+</tr>
+<tr>
+<td><code>env.host_set_text</code></td>
+<td><code>(handle, value) -&gt; ()</code></td>
+<td>write a number into a host element</td>
+</tr>
+<tr>
+<td><code>env.host_set_html</code></td>
+<td><code>(handle, ptr, len) -&gt; ()</code></td>
+<td>write rendered HTML (handle is currently 1)</td>
+</tr>
+<tr>
+<td><code>env.host_canvas_script</code></td>
+<td><code>(ptr, len) -&gt; ()</code></td>
+<td>hand the host a generic visual script</td>
+</tr>
+<tr>
+<td><code>env.host_call</code></td>
+<td><code>(op, op_len, arg, arg_len) -&gt; ()</code></td>
+<td>GLON_LIVE outbound capability request</td>
+</tr>
+</tbody>
+</table>
+<p>The host must supply exactly the imports the module declares. The
+<code>host_canvas_script</code> import is called after every route/event dispatch,
+possibly with <code>len == 0</code>. Rendered HTML is bounded by a 16 KiB <code>htmlbuf</code>; the
+canvas buffer is <code>G1_VIS_CAP</code> = 2560 bytes. The canvas command vocabulary is a
+presentation protocol, not core ABI.</p>
+<h3 id="44-memory-and-lifetime">4.4 Memory and lifetime</h3>
+<ul>
+<li>The module exports one linear <code>memory</code>, built with memory growth. Recreate
+  every JS <code>Uint8Array</code>/<code>DataView</code> view after a call.</li>
+<li>The Glon machine lives in <code>M[65536]</code> plus the loader heap inside linear
+  memory; it is persistent for the instance.</li>
+<li><code>glon_alloc</code> uses a separate transient bump arena (<code>abi_heap[65536]</code>),
+  8-byte aligned, <code>len + 1</code> bytes reserved, reset at each execution entry.</li>
+<li><strong>D11.6 lifetime rule:</strong> a <code>glon_alloc</code> pointer is valid only until the next
+  execution entry. The execution entries are <code>glon_load</code>, <code>glon_call</code>,
+  <code>glon_route</code>, <code>glon_event</code>, <code>glon_event_value</code>, <code>glon_event_bytes</code> and
+  <code>glon_run</code>. <code>glon_init</code>, <code>glon_alloc</code>, <code>glon_result_ptr</code> and
+  <code>glon_result_len</code> are not entries.</li>
+<li>Multiple allocations before one entry are all live and do not alias.</li>
+<li><code>glon_run</code>'s result buffer is static (4 KiB) and not in the arena, but it is
+  replaced by the next <code>glon_run</code>. Copy it if it must survive.</li>
+<li>Route/event output goes through imports, not the result buffer.</li>
+</ul>
+<h3 id="45-source-tokens-and-values">4.5 Source, tokens and values</h3>
+<ul>
+<li>Source is byte-oriented; UTF-8 is a host choice, not an ABI guarantee.</li>
+<li><code>glon_load</code>/<code>glon_run</code> copy source into a static 16 KiB buffer and strip
+  <code>;;</code> line comments before parsing. Embedded NUL ends the C string.</li>
+<li>Tokens must be non-empty and must not contain <code>[</code>, <code>]</code>, <code>'</code>, <code>:</code>, space,
+  tab, CR or LF. The host layer enforces the length; the G1A route/event layer
+  enforces the delimiter rule and reports it as <code>-2</code>. Limits: <code>glon_call</code> name
+  &lt;= 60 bytes; route/event token &lt;= 63.</li>
+<li><code>glon_event_value</code> binds a managed STRING! built from the value bytes; max
+  200 bytes; embedded NUL is truncated by the C-string path.</li>
+<li><code>glon_event_bytes</code> copies by length (NUL and arbitrary bytes preserved) and
+  allows up to 12000 bytes (<code>LIVE_MAX_BYTES</code>).</li>
+<li>Route/event dispatch requires the loaded application to define <code>route</code> and
+  <code>do-event</code> as appropriate. The host does not interpret the token.</li>
+</ul>
+<h3 id="46-loading-sequence">4.6 Loading sequence</h3>
+<pre><code class="language-text">instantiate(wasm, all declared imports)
+glon_init()
+ptr = glon_alloc(len(source)); write source; glon_load(ptr, len)  ;; repeat for libraries
+ptr = glon_alloc(len(token));  write token;  glon_route or glon_event
+;; output arrives synchronously through host_set_html / host_canvas_script
+ptr = glon_alloc(len(program)); write program; glon_run(ptr, len)
+text = memory[glon_result_ptr() .. glon_result_ptr()+glon_result_len()]
+</code></pre>
+<hr>
+<h2 id="5-host-capabilities-and-policy-boundary">5. Host capabilities and policy boundary</h2>
+<p><code>GLON-HOST-CAPABILITIES.md</code> and <code>GLON-APP-MODEL.md</code> define the intended host
+model. These are <strong>not part of the Glon language</strong>:</p>
+<ul>
+<li>A <strong>capability</strong> is a semantic operation a host can implement (time, files,
+  network, view, streams).</li>
+<li>A <strong>permission</strong> is what an application may be granted.</li>
+<li>A <strong>module</strong> is code an application loads.</li>
+<li>An <strong>entitlement</strong> is licensed functionality.</li>
+</ul>
+<p>The proposed universal core and optional capabilities (time, secure random,
+app-private files, networking, streams, view, process spawn, clipboard, etc.)
+are host features. Their exact primitive names are not frozen. An application
+must not assume an optional capability exists.</p>
+<p>The desktop proof uses <code>desktop/glon_host.h</code> for TCP, open, spawn, SHA-256 and
+filesystem read. Those primitives are supplied by platform-specific C files;
+the host never contains application names such as <code>greeting</code> or
+<code>desktop/big.txt</code>. Glon decides; C moves bytes.</p>
+<p>Browser-owned facilities (DOM, HTML, CSS, canvas, input events) are presented
+by the browser host and are not reimplemented in Glon.</p>
+<hr>
+<h2 id="6-minimal-c-embedding-example">6. Minimal C embedding example</h2>
+<pre><code class="language-c">#include &quot;r0_s1.h&quot;
+#include &lt;stdio.h&gt;
+
+int main(void) {
+    r0_s1_init();
+
+    int err = 0;
+    cell prog = r0_s1_parse(
+        &quot;[ square: func [x] [ * x x ]  square 9 ]&quot;, &amp;err);
+    if (err) {
+        r0_s1_outcome out;
+        r0_s1_session_parse_error(&amp;out);
+        fprintf(stderr, &quot;parse error: %s\n&quot;,
+                r0_s1_outcome_detail_name(out.detail));
+        return 1;
+    }
+
+    int n = r0_s1_run(prog);
+    if (r0_s1_ran_cleanly() &amp;&amp; n == 1)
+        printf(&quot;%ld\n&quot;, (long)int_val(r0_s1_result(0, n)));
+    else
+        fprintf(stderr, &quot;run did not complete cleanly\n&quot;);
+    return 0;
+}
+</code></pre>
+<p>The example is illustrative; production embedders should use
+<code>r0_s1_session_run_block</code> and its structured <code>r0_s1_outcome</code>, which correctly
+classifies parse errors, uncaught SIN! and machine halts. Do not inspect
+rendered text to decide an outcome.</p>
+<p>Session-style use:</p>
+<pre><code class="language-c">r0_s1_outcome out;
+r0_s1_init();
+r0_s1_session_run(&quot;x: 10&quot;, 5, &amp;out);          /* definitions persist */
+r0_s1_session_run(&quot;+ x 5&quot;, 5, &amp;out);          /* =&gt; 15 */
+</code></pre>
+<p><code>r0_s1_session_run</code> strips comments and wraps cells. <code>r0_s1_run_persistent</code>
+preserves the managed heap frontier; <code>r0_s1_run</code> does not.</p>
+<hr>
+<h2 id="7-failure-mapping-at-the-boundary">7. Failure mapping at the boundary</h2>
+<table>
+<thead>
+<tr>
+<th>Runtime event</th>
+<th>C/WASM observation</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>clean run</td>
+<td><code>r0_s1_ran_cleanly()</code> true / outcome <code>OK</code></td>
+</tr>
+<tr>
+<td>uncaught SIN!</td>
+<td><code>r0_s1_uncaught_error</code> fills fields / outcome <code>UNCAUGHT_SIN</code></td>
+</tr>
+<tr>
+<td>parse failure</td>
+<td><code>r0_s1_parse_error_kind</code> / <code>PARSE_ERROR</code> or <code>RESOURCE_ERROR</code></td>
+</tr>
+<tr>
+<td><code>CONTEXT_FULL</code></td>
+<td><code>HALT</code>/<code>RESOURCE_ERROR</code> detail <code>context_full</code>; no SIN!</td>
+</tr>
+<tr>
+<td>GC worklist full</td>
+<td><code>RESOURCE_ERROR</code> detail <code>gc_worklist_full</code></td>
+</tr>
+<tr>
+<td>stack sentry</td>
+<td><code>HALT</code> detail <code>stack_sentry</code></td>
+</tr>
+<tr>
+<td>other machine halt</td>
+<td><code>HALT</code> detail <code>machine</code></td>
+</tr>
+<tr>
+<td>WASM route/event dispatch failure</td>
+<td>export returns -2; no result text</td>
+</tr>
+<tr>
+<td>WASM <code>glon_run</code> parse/SIN!/halt</td>
+<td>export returns 0; inspect result text</td>
+</tr>
+</tbody>
+</table>
+<p>A host must never treat <code>** halted</code> as a catchable language error. It is a
+machine fail-stop and cannot be judged.</p>
+<hr>
+<h2 id="8-tested-boundary">8. Tested boundary</h2>
+<p>The host/wasm boundary is exercised by:</p>
+<ul>
+<li><code>demo/shop/abi_arena_wasm_test.js</code> — 10k valued and 10k value-less events,
+  allocation lifetime and aliasing;</li>
+<li><code>demo/shop/binding_case_wasm_test.js</code> — binding and CASE on real WASM;</li>
+<li><code>demo/shop/node_test.js</code> — G1E launcher, events, persistence, canvas;</li>
+<li><code>demo/shop/primer_node_test.js</code> — primer examples through <code>glon_run</code>;</li>
+<li><code>demo/shop/live_node_test.js</code> — GLON_LIVE <code>host_call</code> and
+  <code>glon_event_bytes</code>;</li>
+<li><code>demo/shop/traffic_node_test.js</code>, <code>demo/shop/linda_node_test.js</code> — long
+  sessions;</li>
+<li><code>demos/kaka/*_test.js</code> and CDP soaks — sustained host interaction;</li>
+<li><code>r0_s1_g1a_live_tests.c</code> — native GLON_LIVE boundary;</li>
+<li><code>r0_s1_session_tests.c</code> — structured native session outcomes;</li>
+<li><code>r0_s1_primer_tests.c</code> — the same text the primer displays;</li>
+<li><code>./check-frozen-s1.sh</code> — frozen substrate guard.</li>
+</ul>
+<p>The WASM ABI is not frozen. Pin a commit or tag; the source, not a committed
+binary, is authoritative.</p>
+</main>
+<footer>Generated from the pinned upstream Markdown at <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code>. The original Markdown is preserved under <a href="../source/">source/</a>.</footer>
+
+</body>
+</html>

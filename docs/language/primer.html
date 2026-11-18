@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glon Primer</title>
+<style>
+:root { --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+        --accent:#2456a6; --code:#20262e; --ok:#1b6b42; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --code:#242a32; --ok:#7ad6a2; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:1040px; padding:0 16px 4rem; color:var(--fg); background:var(--bg);
+       font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3,h4 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .4rem; }
+h2 { font-size:clamp(1.25rem,3vw,1.55rem); margin:2.2rem 0 .6rem; }
+h3 { font-size:1.1rem; margin:1.6rem 0 .4rem; }
+p { margin:.55rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:inherit; overflow-wrap:normal; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.75rem 0; border-bottom:1px solid var(--line); margin-bottom:1.4rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover, .navlinks a:focus-visible { color:var(--accent); text-decoration:underline; }
+.pagelead { display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; margin:0 0 1rem;
+            font-size:.86rem; color:var(--muted); }
+.pagelead a { font-weight:600; }
+table { border-collapse:collapse; width:100%; margin:.8rem 0 1.2rem; font-size:.92rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .55rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+blockquote { border-left:3px solid var(--line); margin:1rem 0; padding:.5rem 1rem; color:var(--muted); background:var(--panel); }
+ul,ol { padding-left:1.4rem; }
+li { margin:.2rem 0; }
+.mermaid { overflow-x:auto; text-align:center; margin:1.2rem 0; }
+.mermaid svg { max-width:100%; height:auto; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; margin:1rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card h3 { margin:.1rem 0 .35rem; }
+.card p:last-child { margin-bottom:0; }
+.source-list { font-size:.9rem; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem; }
+@media (max-width:560px) {
+  body { padding:0 14px 3rem; }
+  .topnav { align-items:flex-start; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Site navigation">
+  <a class="brand" href="../">Glon</a>
+  <div class="navlinks">
+    <a href="../">Home</a>
+    <a href="index.html">Language</a>
+    <a href="../grammar/">Grammar</a>
+    <a href="../#challenges">Challenges</a>
+  </div>
+</nav>
+<main>
+<div class="pagelead"><a href="../source/GLON-PRIMER.md">View Markdown source</a> <span>Upstream commit <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></span></div>
+<!-- Generated from demo/shop/primer.txt by demo/shop/build-primer.py. Edit primer.txt, then rerun the script. -->
+
+<h1 id="glon-in-5-minutes">Glon in 5 minutes</h1>
+<p><em>Saturnine · A Glonbook</em></p>
+<p>Glon is a small Rebol-family language that runs on a tiny frozen machine (S1), natively and as WebAssembly in the browser. This primer teaches enough Glon to read and change simple programs.</p>
+<p>This primer is <strong>instructional</strong>. The normative rules are in <a href="laws.html">GLON-ALPHA-LAWS.md</a>; where the two differ, the laws win.</p>
+<p>Every example here is real: the live primer runs each one through the actual Glon WebAssembly runtime, and the native test suite checks every result shown below. The result of an example is shown after <code>=&gt;</code>: it is the value of the program's last expression. A result starting <code>** uncaught</code> means the program was stopped by a raised SIN! that nothing caught.</p>
+<p>Live, editable version: <a href="https://gchiu.github.io/rebol-substrate-experiment/shop/primer.html">https://gchiu.github.io/rebol-substrate-experiment/shop/primer.html</a></p>
+<h2 id="1-values-and-words">1. Values and words</h2>
+<p>A program is a sequence of values. Numbers are integers. A <strong>word</strong> names a value; a <strong>set-word</strong> (a word with a trailing colon) gives it one.</p>
+<pre><code>x: 5
++ x 3
+;; =&gt; 8
+</code></pre>
+<p>Glon calls are <strong>prefix</strong>: the function comes first and takes a fixed number of arguments. There is no operator precedence and there are no parentheses; each function simply takes the next complete expressions it needs. <code>+ 1 * 2 3</code> reads as <code>+ 1 (* 2 3)</code>.</p>
+<pre><code>+ 1 * 2 3
+;; =&gt; 7
+</code></pre>
+<p>A word with a leading quote (<code>'tea</code>) is a word used as data, not looked up.</p>
+<pre><code>drink: 'tea
+drink
+;; =&gt; tea
+</code></pre>
+<h2 id="2-blocks-are-data">2. Blocks are data</h2>
+<p>Square brackets make a <strong>block</strong>. A block is just data (a list of values) until something evaluates it. <code>do</code> evaluates a block.</p>
+<pre><code>[ + 2 3 ]
+;; =&gt; [ + 2 3 ]
+</code></pre>
+<pre><code>do [ + 2 3 ]
+;; =&gt; 5
+</code></pre>
+<h2 id="3-functions">3. Functions</h2>
+<p><code>func [params] [body]</code> makes a function. Calling it needs no parentheses or commas: the function takes as many following values as it has parameters.</p>
+<pre><code>double: func [x] [
+    * x 2
+]
+double 21
+;; =&gt; 42
+</code></pre>
+<pre><code>area: func [w h] [ * w h ]
+area 3 4
+;; =&gt; 12
+</code></pre>
+<p>Calls nest by arity: <code>double double 5</code> is <code>double (double 5)</code>.</p>
+<pre><code>double: func [x] [ * x 2 ]
+double double 5
+;; =&gt; 20
+</code></pre>
+<h2 id="4-conditionals">4. Conditionals</h2>
+<p><code>either condition [then] [else]</code> evaluates one of two blocks. Comparisons are prefix too. <code>none</code> and <code>0</code> are false; every other value is true (there are no <code>true</code>/<code>false</code> words; use <code>1</code> and <code>0</code>).</p>
+<pre><code>n: 7
+either &gt; n 5 [ 'big ] [ 'small ]
+;; =&gt; big
+</code></pre>
+<pre><code>either 0 [ 'yes ] [ 'no ]
+;; =&gt; no
+</code></pre>
+<h2 id="5-case">5. CASE</h2>
+<p><code>case</code> takes ONE block of pairs: a <strong>condition block</strong> followed by an <strong>action block</strong>. Conditions are tried in order; the first true one runs its action and <code>case</code> returns the action's result. <code>[1]</code> is a catch-all condition. With no match, <code>case</code> returns <code>none</code>. (<code>case</code> is ordinary Glon from <code>case.glon</code>, loaded as a library.)</p>
+<pre><code>size: func [n] [
+    case [
+        [&lt; n 10]  [ 'small ]
+        [&lt; n 100] [ 'medium ]
+        [1]       [ 'large ]
+    ]
+]
+size 50
+;; =&gt; medium
+</code></pre>
+<h2 id="6-closures-and-lexical-scope">6. Closures and lexical scope</h2>
+<p>A function remembers the context it was made in. A function returned from another function is a <strong>closure</strong>: it keeps its parameters alive.</p>
+<pre><code>make-adder: func [n] [
+    func [x] [ + x n ]
+]
+add10: make-adder 10
+add10 5
+;; =&gt; 15
+</code></pre>
+<p>A set-word inside a function updates the nearest existing binding of that word; if there is none, it creates a local of the current call.</p>
+<pre><code>counter: func [] [
+    n: 0
+    func [] [ n: + n 1 ]
+]
+c: counter
+c c c
+;; =&gt; 3
+</code></pre>
+<p><strong>The lexical fence.</strong> A plain block that refers to a function's locals depends on that one call. It may be used while the call is running, but it may not escape it. To take behaviour out of a call, make a closure.</p>
+<p>Legal: the block <code>[ + x 1 ]</code> is evaluated inside the call that owns <code>x</code>.</p>
+<pre><code>f: func [x] [ do [ + x 1 ] ]
+f 7
+;; =&gt; 8
+</code></pre>
+<p>Illegal: <code>do [ [x] ]</code> returns the inner block <code>[x]</code> out of <code>f</code>, but that block still refers to <code>f</code>'s <code>x</code>. The runtime refuses, at the moment of escape, by raising a SIN! of type <code>escape</code>, id <code>return</code>. Its last field, shown here as <code>&lt;site&gt;</code>, is the block's internal lexical site id: an implementation number (the live page shows the real one).</p>
+<pre><code>f: func [x] [ do [ [x] ] ]
+f 7
+;; =&gt; ** uncaught #[SIN! escape return &lt;site&gt;]
+</code></pre>
+<p>The legal way to take <code>x</code> out is a closure (<code>does</code> makes a function with no parameters):</p>
+<pre><code>f: func [x] [ does [ x ] ]
+g: f 7
+g
+;; =&gt; 7
+</code></pre>
+<h2 id="7-sin-raise-and-judge">7. SIN!, raise and judge</h2>
+<p>A <strong>SIN!</strong> is a first-class value describing a failure: a type, an id and an argument. A SIN! is inert data until it is raised: you can store it, pass it and inspect it freely.</p>
+<pre><code>s: create-sin 'demo 'oops 7
+s
+;; =&gt; #[SIN! demo oops 7]
+</code></pre>
+<p><code>raise</code> starts propagation: it abandons the current work and unwinds to the nearest <code>judge</code>. <code>judge block</code> runs the block; if something inside raises, <code>judge</code> returns the SIN! as ordinary inert data.</p>
+<pre><code>s: create-sin 'demo 'oops 7
+judge [
+    raise s
+]
+;; =&gt; #[SIN! demo oops 7]
+</code></pre>
+<p>Inspect a SIN! with <code>sin?</code>, <code>sin-type</code>, <code>sin-id</code> and <code>sin-arg</code>:</p>
+<pre><code>e: judge [ raise create-sin 'demo 'oops 7 ]
+sin-id e
+;; =&gt; oops
+</code></pre>
+<p>After <code>judge</code> returns, execution simply continues:</p>
+<pre><code>x: 1
+s: judge [
+    raise create-sin 'demo 'oops 7
+]
+x: + x 1
+x
+;; =&gt; 2
+</code></pre>
+<p>With no <code>judge</code>, a raised SIN! stops the program:</p>
+<pre><code>raise create-sin 'demo 'oops 7
+;; =&gt; ** uncaught #[SIN! demo oops 7]
+</code></pre>
+<p>Runtime checks raise SIN!s too. The lexical fence above can be judged like any other raise:</p>
+<pre><code>f: func [x] [ do [ [x] ] ]
+e: judge [ f 7 ]
+sin-id e
+;; =&gt; return
+</code></pre>
+<h2 id="8-strings">8. Strings</h2>
+<p>Text in double quotes is a STRING!. Strings are <strong>immutable</strong>: string operations return new strings and never change their inputs. They have qualified names: <code>s/+</code> joins two strings, <code>s/=</code> compares their contents, <code>s/length</code> counts their bytes and <code>s/print</code> prints one. (For now <code>s/+</code> is simply one word; a <code>/</code> inside a word is reserved for qualified names. A bare <code>/</code> is still division.)</p>
+<pre><code>s: &quot;hello &quot;
+t: &quot;world&quot;
+s/+ s t
+;; =&gt; &quot;hello world&quot;
+</code></pre>
+<p><code>s/+</code> built a new string; <code>s</code> itself is unchanged:</p>
+<pre><code>s: &quot;hello &quot;
+u: s/+ s &quot;world&quot;
+s
+;; =&gt; &quot;hello &quot;
+</code></pre>
+<p><code>s/length</code> counts stored bytes (Glon has no Unicode character semantics yet):</p>
+<pre><code>s/length &quot;hello world&quot;
+;; =&gt; 11
+</code></pre>
+<p><code>s/=</code> compares contents. <code>=</code> is identity, so two separately built strings with the same text are <code>s/=</code> but not <code>=</code>:</p>
+<pre><code>s/= s/+ &quot;ab&quot; &quot;c&quot; &quot;abc&quot;
+;; =&gt; 1
+</code></pre>
+<pre><code>= s/+ &quot;ab&quot; &quot;c&quot; &quot;abc&quot;
+;; =&gt; 0
+</code></pre>
+<p><code>s/print "hello"</code> writes the string's bytes and a newline to the output (<code>print</code> prints integers only). Giving a string operation something that is not a string raises a SIN! of type <code>type</code>:</p>
+<pre><code>e: judge [ s/+ &quot;hello&quot; 42 ]
+sin-id e
+;; =&gt; s/+
+</code></pre>
+<h2 id="9-tasks">9. Tasks</h2>
+<p>Glon tasks are cooperative: <code>spawn block</code> creates a task, <code>yield</code> hands control to the next task, and <code>run-tasks</code> runs them until all finish. These words come from the task library shipped with the demos (<code>demos/tuple-space.glon</code>), loaded for the examples below. Two tasks interleave their digits:</p>
+<pre><code>trace: 0
+spawn [ trace: + * trace 10 1  yield  trace: + * trace 10 1 ]
+spawn [ trace: + * trace 10 2  yield  trace: + * trace 10 2 ]
+run-tasks
+trace
+;; =&gt; 1212
+</code></pre>
+<p>A task body obeys the lexical fence: a block that depends on the spawning call is rejected with <code>'escape 'transport</code> <strong>before</strong> the task is created.</p>
+<pre><code>go: func [x] [ spawn [ + x 1 ] ]
+e: judge [ go 5 ]
+sin-id e
+;; =&gt; transport
+</code></pre>
+<h2 id="10-coming-from-rebol-or-red">10. Coming from Rebol or Red</h2>
+<p>Glon looks familiar, which is exactly why these differences matter:</p>
+<table>
+<thead>
+<tr>
+<th>In Rebol / Red</th>
+<th>In Glon today</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>1 + 2 * 3</code> (infix)</td>
+<td>prefix only: <code>+ 1 * 2 3</code>; comparisons too: <code>&gt; n 0</code></td>
+</tr>
+<tr>
+<td><code>( ... )</code> groups an expression</td>
+<td>no parentheses; fixed arity decides grouping</td>
+</tr>
+<tr>
+<td><code>0</code> is true; <code>true</code> / <code>false</code></td>
+<td><code>0</code> and <code>none</code> are false; no <code>true</code> / <code>false</code> words (use <code>1</code> / <code>0</code>)</td>
+</tr>
+<tr>
+<td><code>case [cond [action] ...]</code>, <code>case/all</code></td>
+<td><code>case [ [cond] [action] ... ]</code>: conditions are blocks; no <code>/all</code></td>
+</tr>
+<tr>
+<td><code>foreach</code>, <code>each</code>, <code>while</code>, <code>repeat</code>, <code>loop</code></td>
+<td>no loop words; use recursion</td>
+</tr>
+<tr>
+<td><code>switch</code></td>
+<td>none; use <code>case</code></td>
+</tr>
+<tr>
+<td><code>type?</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>try</code>, <code>attempt</code>, <code>error!</code>, <code>catch</code> / <code>throw</code></td>
+<td><code>SIN!</code>, <code>create-sin</code>, <code>raise</code>, <code>judge</code></td>
+</tr>
+<tr>
+<td>an unset word is a catchable error</td>
+<td>an unset word halts the run (a machine fail-stop, not a SIN!)</td>
+</tr>
+<tr>
+<td><code>func</code> set-words are global (Rebol); <code>function</code> collects locals (Red)</td>
+<td>a set-word updates the nearest existing binding, else makes a local</td>
+</tr>
+<tr>
+<td>a bound block can travel anywhere</td>
+<td>a block that uses a call's locals may not outlive that call; use a closure</td>
+</tr>
+<tr>
+<td><code>[1] = [1]</code> is true</td>
+<td><code>=</code> is identity for blocks and strings (<code>= [1] [1]</code> is <code>0</code>); <code>str-eq</code> compares strings</td>
+</tr>
+<tr>
+<td>threads, ports</td>
+<td>cooperative tasks: <code>spawn</code>, <code>yield</code>, <code>run-tasks</code> (library words)</td>
+</tr>
+<tr>
+<td><code>print</code> shows any value</td>
+<td><code>print</code> shows integers only; <code>s/print</code> prints a string</td>
+</tr>
+<tr>
+<td><code>append</code> changes a string in place</td>
+<td>strings are immutable: <code>s/+</code> returns a new string</td>
+</tr>
+</tbody>
+</table>
+<h2 id="11-next">11. Next</h2>
+<ul>
+<li>The first substantial Glon program is the live traffic simulator: <a href="https://gchiu.github.io/rebol-substrate-experiment/shop/traffic.html">https://gchiu.github.io/rebol-substrate-experiment/shop/traffic.html</a>. Its IDM, Newell, OVM/FVDM and NaSch car-following models are written in Glon and run through WebAssembly in the browser.</li>
+<li>The normative rules: <a href="laws.html">GLON-ALPHA-LAWS.md</a>.</li>
+</ul>
+</main>
+<footer>Generated from the pinned upstream Markdown at <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code>. The original Markdown is preserved under <a href="../source/">source/</a>.</footer>
+
+</body>
+</html>

@@ -4,12 +4,12 @@
   "branch": "glon-shop-g1a",
   "build": "make glon",
   "documentation": {
-    "language_reference": "https://gchiu.github.io/rebol-substrate-experiment/language/",
-    "grammar": "https://gchiu.github.io/rebol-substrate-experiment/grammar/",
-    "laws": "https://gchiu.github.io/rebol-substrate-experiment/language/laws.md",
-    "specification": "https://gchiu.github.io/rebol-substrate-experiment/language/spec.md",
-    "evaluation": "https://gchiu.github.io/rebol-substrate-experiment/language/evaluation.md",
-    "host_abi": "https://gchiu.github.io/rebol-substrate-experiment/language/host-abi.md",
-    "ai_authoring": "https://gchiu.github.io/rebol-substrate-experiment/language/ai-authoring.md"
+    "language_reference": "https://gchiu.github.io/glon/language/",
+    "grammar": "https://gchiu.github.io/glon/grammar/",
+    "laws": "https://gchiu.github.io/glon/language/laws.html",
+    "specification": "https://gchiu.github.io/glon/language/spec.html",
+    "evaluation": "https://gchiu.github.io/glon/language/evaluation.html",
+    "host_abi": "https://gchiu.github.io/glon/language/host-abi.html",
+    "ai_authoring": "https://gchiu.github.io/glon/language/ai-authoring.html"
   }
 }

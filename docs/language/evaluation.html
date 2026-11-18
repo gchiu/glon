@@ -1,0 +1,667 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Evaluation Model</title>
+<style>
+:root { --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+        --accent:#2456a6; --code:#20262e; --ok:#1b6b42; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --code:#242a32; --ok:#7ad6a2; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:1040px; padding:0 16px 4rem; color:var(--fg); background:var(--bg);
+       font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3,h4 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .4rem; }
+h2 { font-size:clamp(1.25rem,3vw,1.55rem); margin:2.2rem 0 .6rem; }
+h3 { font-size:1.1rem; margin:1.6rem 0 .4rem; }
+p { margin:.55rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:inherit; overflow-wrap:normal; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.75rem 0; border-bottom:1px solid var(--line); margin-bottom:1.4rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover, .navlinks a:focus-visible { color:var(--accent); text-decoration:underline; }
+.pagelead { display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; margin:0 0 1rem;
+            font-size:.86rem; color:var(--muted); }
+.pagelead a { font-weight:600; }
+table { border-collapse:collapse; width:100%; margin:.8rem 0 1.2rem; font-size:.92rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .55rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+blockquote { border-left:3px solid var(--line); margin:1rem 0; padding:.5rem 1rem; color:var(--muted); background:var(--panel); }
+ul,ol { padding-left:1.4rem; }
+li { margin:.2rem 0; }
+.mermaid { overflow-x:auto; text-align:center; margin:1.2rem 0; }
+.mermaid svg { max-width:100%; height:auto; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; margin:1rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card h3 { margin:.1rem 0 .35rem; }
+.card p:last-child { margin-bottom:0; }
+.source-list { font-size:.9rem; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem; }
+@media (max-width:560px) {
+  body { padding:0 14px 3rem; }
+  .topnav { align-items:flex-start; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Site navigation">
+  <a class="brand" href="../">Glon</a>
+  <div class="navlinks">
+    <a href="../">Home</a>
+    <a href="index.html">Language</a>
+    <a href="../grammar/">Grammar</a>
+    <a href="../#challenges">Challenges</a>
+  </div>
+</nav>
+<main>
+<div class="pagelead"><a href="../source/GLON-EVALUATION-MODEL.md">View Markdown source</a> <span>Upstream commit <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></span></div>
+<h1 id="glon-evaluation-model">Glon Evaluation Model</h1>
+<p>This document explains how an implemented Glon program executes: how words
+resolve, how values flow, how calls consume arguments, how state changes, and
+where control unwinds. It is descriptive and subordinate to
+<code>GLON-ALPHA-LAWS.md</code>.</p>
+<p>The evaluator is emitted S1 code (<code>r0_s1_runtime.c</code>); this document describes
+that code, not a separate C interpreter. The frozen S1 substrate only executes
+seven primitives (<code>LIT DUP DROP @ ! 0BRANCH HOST</code>).</p>
+<hr>
+<h2 id="1-layers-and-responsibility">1. Layers and responsibility</h2>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;Glon source: words, blocks, closures, SIN!&quot;] --&gt; B[&quot;Reader and loader: r0_s1_parse&quot;]
+    B --&gt; C[&quot;Evaluator emitted as S1: subexpr, native, closure, return&quot;]
+    C --&gt; D[&quot;R0 runtime mechanisms: contexts, GC, loader, tasks&quot;]
+    D --&gt; E[&quot;Frozen S1: seven primitives, memory-mapped registers&quot;]
+    E --&gt; F[&quot;Host: native CLI, WASM, browser, Jupyter&quot;]
+    G[&quot;Libraries: prelude, case, parse, strings, tasks&quot;] --&gt; A
+</code></pre>
+<p>Language semantics live in the evaluator and the laws. Hosts move bytes and
+present output; they do not implement evaluation. Library words are ordinary
+Glon built from the core mechanisms.</p>
+<hr>
+<h2 id="2-runtime-state">2. Runtime state</h2>
+<p>The machine is one persistent, single-threaded 65,536-cell memory
+configuration. The important logical state is:</p>
+<table>
+<thead>
+<tr>
+<th>State</th>
+<th>What it holds</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Current context (<code>RV_CTX</code>)</td>
+<td>The lexical environment used by word lookup</td>
+</tr>
+<tr>
+<td>Child context (<code>RV_CHILD</code>)</td>
+<td>The context of the activation being invoked</td>
+</tr>
+<tr>
+<td>Current closure (<code>RV_CLOSURE</code>)</td>
+<td>The closure being applied</td>
+</tr>
+<tr>
+<td>Activation frame chain (<code>RV_FRAME</code>)</td>
+<td>Linked frames for return and judges</td>
+</tr>
+<tr>
+<td>Current block/cursor/end (<code>RV_BLK</code>, <code>RV_CUR</code>, <code>RV_END</code>)</td>
+<td>The block being evaluated</td>
+</tr>
+<tr>
+<td>Data stack</td>
+<td>Tagged values and result sets</td>
+</tr>
+<tr>
+<td>Return stack</td>
+<td>Continuations, activation frames, stack-local contexts</td>
+</tr>
+<tr>
+<td>Global context</td>
+<td>256-binding root environment</td>
+</tr>
+<tr>
+<td>Managed heap</td>
+<td>GC-managed blocks, strings, closures, contexts, SIN!</td>
+</tr>
+<tr>
+<td>Loader heap</td>
+<td>Permanent parsed source and symbols</td>
+</tr>
+<tr>
+<td>Task table</td>
+<td>Three cooperative task records</td>
+</tr>
+</tbody>
+</table>
+<pre><code class="language-mermaid">flowchart TD
+    G[&quot;Global context: 256 bindings&quot;] --&gt; C1[&quot;Activation context A: 16 bindings&quot;]
+    C1 --&gt; C2[&quot;Activation context B: 16 bindings&quot;]
+    C2 --&gt; C3[&quot;Closure-captured context&quot;]
+    F[&quot;Frame chain&quot;] --&gt; F1[&quot;frame: site, SP, RP, IP, CTX, CUR, END, BLK, bias&quot;]
+    F1 --&gt; F2[&quot;previous frame&quot;]
+    DS[&quot;Data stack&quot;] --&gt; DV[&quot;result sets and temporaries&quot;]
+    RS[&quot;Return stack&quot;] --&gt; RV[&quot;continuations, frames, stack contexts&quot;]
+    MH[&quot;Managed heap&quot;] --&gt; MO[&quot;blocks, strings, closures, contexts, SIN!&quot;]
+    LH[&quot;Loader heap&quot;] --&gt; LO[&quot;source blocks and interned symbols&quot;]
+</code></pre>
+<p>Contexts are a parent chain. Lookup walks from the current context toward the
+global root. Frames are a separate chain used for return, judges, context
+origin and the Guard of Binding.</p>
+<hr>
+<h2 id="3-running-a-program">3. Running a program</h2>
+<h3 id="31-host-entry">3.1 Host entry</h3>
+<p>A typical run:</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant H as Host
+    participant R as r0_s1_run
+    participant E as Evaluator
+    participant G as Global context
+    H-&gt;&gt;R: block value
+    R-&gt;&gt;R: set CUR END BLK CTX global, clear frames
+    R-&gt;&gt;R: reset stacks and S1 registers
+    R-&gt;&gt;E: run main entry
+    E-&gt;&gt;E: evaluate every form in sequence
+    E-&gt;&gt;G: lookups and assignments as needed
+    E--&gt;&gt;R: final result set
+    R-&gt;&gt;R: check stack sentry
+    R--&gt;&gt;H: N results
+</code></pre>
+<p><code>r0_s1_run</code> is fresh-state; <code>r0_s1_run_persistent</code> preserves the managed heap
+frontier so definitions survive across calls. Both reset the transient data
+stack, return stack, frame chain and current context to the global context at
+the start of each run (<code>r0_s1_runtime.c:4103-4158</code>).</p>
+<h3 id="32-block-sequence-and-result-sets">3.2 Block sequence and result sets</h3>
+<p>Evaluating a block:</p>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;start: CUR at first form, END after last&quot;] --&gt; B{&quot;CUR before END?&quot;}
+    B --&gt;|&quot;no&quot;| Z[&quot;return NONE as one result&quot;]
+    B --&gt;|&quot;yes&quot;| C[&quot;evaluate one subexpression&quot;]
+    C --&gt; D{&quot;more forms?&quot;}
+    D --&gt;|&quot;yes&quot;| E[&quot;discard this result set&quot;]
+    E --&gt; B
+    D --&gt;|&quot;no&quot;| F[&quot;return this result set&quot;]
+</code></pre>
+<p>Each subexpression yields <strong>zero or more results</strong>. All but the last are
+discarded by the block evaluator. The last result set is the block's result.
+This is why <code>[1 2]</code> yields 2, while <code>[values [1 2]]</code> yields two results.</p>
+<h3 id="33-result-set-rules-at-call-sites">3.3 Result-set rules at call sites</h3>
+<p>Most operations collapse an argument expression to one value:</p>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;argument expression&quot;] --&gt; B[&quot;evaluate subexpression&quot;]
+    B --&gt; C{&quot;number of results N&quot;}
+    C --&gt;|&quot;N = 0&quot;| D[&quot;argument value is NONE&quot;]
+    C --&gt;|&quot;N = 1&quot;| E[&quot;argument value is that value&quot;]
+    C --&gt;|&quot;N &gt; 1&quot;| F[&quot;argument value is the first result&quot;]
+</code></pre>
+<p>Consequences:</p>
+<pre><code class="language-glon">+ values [1 2] 3      ;; =&gt; 4  (first result 1, then 3)
+reduce [values [1 2] 3] ;; =&gt; [1 3]
+</code></pre>
+<p>This collapse is IMPLEMENTED and is not stated in the Alpha laws. <code>values</code> is
+the exception that preserves all results, but it requires each source form to
+yield exactly one result.</p>
+<hr>
+<h2 id="4-subexpression-dispatch">4. Subexpression dispatch</h2>
+<p>Every form goes through <code>emit_subexpr</code> (<code>r0_s1_runtime.c:3569-3745</code>).</p>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;read value at CUR; CUR++&quot;] --&gt; T{&quot;tag&quot;}
+    T --&gt;|&quot;INT NONE BLOCK CONTEXT STRING SIN USER&quot;| S[&quot;self-evaluate as a value&quot;]
+    T --&gt;|&quot;WORD&quot;| W[&quot;dynamic lookup&quot;]
+    T --&gt;|&quot;BOUND&quot;| B[&quot;direct lexical slot read&quot;]
+    T --&gt;|&quot;SET-WORD&quot;| SW[&quot;evaluate one expression; assign&quot;]
+    T --&gt;|&quot;GET-WORD&quot;| GW[&quot;lookup; do not invoke&quot;]
+    T --&gt;|&quot;LIT-WORD&quot;| LW[&quot;return plain WORD&quot;]
+    T --&gt;|&quot;CLOSURE&quot;| CL[&quot;invoke closure with arity arguments&quot;]
+    T --&gt;|&quot;NATIVE&quot;| NA[&quot;invoke native with arity arguments&quot;]
+    T --&gt;|&quot;RAW&quot;| RA[&quot;invoke RAW with arity arguments&quot;]
+    W --&gt; V{&quot;value callable?&quot;}
+    B --&gt; V
+    V --&gt;|&quot;closure native RAW&quot;| I[&quot;invoke&quot;]
+    V --&gt;|&quot;anything else&quot;| Y[&quot;yield value&quot;]
+    S --&gt; Y
+    GW --&gt; Y
+    LW --&gt; Y
+    SW --&gt; Y
+    CL --&gt; Y
+    NA --&gt; Y
+    RA --&gt; Y
+    I --&gt; Y
+</code></pre>
+<p><code>func</code> and <code>return</code> are detected before ordinary WORD lookup, because they are
+reserved keywords in value position. <code>masm</code>/<code>raw</code> are resolved by the reader,
+not the evaluator.</p>
+<hr>
+<h2 id="5-word-resolution">5. Word resolution</h2>
+<h3 id="51-lookup">5.1 Lookup</h3>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;WORD symbol id&quot;] --&gt; B[&quot;start at RV_CTX&quot;]
+    B --&gt; C{&quot;context is NONE?&quot;}
+    C --&gt;|&quot;yes&quot;| H[&quot;machine fail-stop: unbound word&quot;]
+    C --&gt;|&quot;no&quot;| D{&quot;binding with this symbol id?&quot;}
+    D --&gt;|&quot;yes&quot;| E[&quot;return binding value&quot;]
+    D --&gt;|&quot;no&quot;| F[&quot;move to parent context&quot;]
+    F --&gt; C
+</code></pre>
+<p>Lookup is dynamic through the lexical parent chain. It is not re-lexicalised.
+A pre-resolved BOUND value skips the name search and reads <code>(depth, slot)</code>
+directly, guarded by the frame site (<code>emit_load_lex</code>,
+<code>r0_s1_runtime.c:2228-2291</code>).</p>
+<h3 id="52-assignment">5.2 Assignment</h3>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;SET-WORD name and RHS value&quot;] --&gt; B[&quot;start at RV_CTX&quot;]
+    B --&gt; C{&quot;context is NONE?&quot;}
+    C --&gt;|&quot;yes&quot;| D{&quot;current context has room?&quot;}
+    D --&gt;|&quot;no&quot;| X[&quot;CONTEXT_FULL fail-stop before writing&quot;]
+    D --&gt;|&quot;yes&quot;| E[&quot;append name to current context&quot;]
+    C --&gt;|&quot;no&quot;| F{&quot;binding found?&quot;}
+    F --&gt;|&quot;yes&quot;| G[&quot;escape-law store check&quot;]
+    G --&gt; H[&quot;write value into existing slot&quot;]
+    F --&gt;|&quot;no&quot;| I[&quot;move to parent context&quot;]
+    I --&gt; C
+</code></pre>
+<p><code>r_set</code> (<code>r0_s1_runtime.c:2578-2643</code>) performs nearest-update. A local is
+created only when the name exists nowhere in the chain. The <code>CONTEXT_FULL</code>
+check occurs before any mutation.</p>
+<h3 id="53-parameters-and-locals">5.3 Parameters and locals</h3>
+<p>On a closure call:</p>
+<ol>
+<li>The caller evaluates all argument expressions left-to-right.</li>
+<li>The evaluator creates a new child context under the closure's captured
+   context.</li>
+<li>It binds the spec's parameter words, in reverse spec order, into that
+   context.</li>
+<li>A set-word inside the body updates a parameter or an existing outer binding
+   if present, otherwise it appends a local to the activation's 16-binding
+   context.</li>
+</ol>
+<p>The reverse-order bind is an implementation layout detail; programs see the
+spec order.</p>
+<hr>
+<h2 id="6-calls">6. Calls</h2>
+<h3 id="61-native-and-closure-calls">6.1 Native and closure calls</h3>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Caller
+    participant Eval as Evaluator
+    participant Callee as Native or Closure
+    Caller-&gt;&gt;Eval: reach callable word or value
+    Eval-&gt;&gt;Eval: read arity
+    loop each argument
+        Eval-&gt;&gt;Eval: evaluate one subexpression
+        Eval-&gt;&gt;Eval: collapse to one value
+    end
+    Eval-&gt;&gt;Callee: apply with argument values
+    Callee--&gt;&gt;Eval: result set
+    Eval--&gt;&gt;Caller: result set
+</code></pre>
+<p>A plain word bound to a closure auto-invokes. <code>:f</code> retrieves the closure
+without invoking it; <code>invoke :f</code> invokes it. <code>invoke</code> evaluates exactly one
+expression to obtain a closure, then consumes the closure's arity from the
+same caller expression stream.</p>
+<h3 id="62-closure-activation">6.2 Closure activation</h3>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Caller
+    participant Eval as Evaluator
+    participant Frame as Frame and child context
+    participant Body as Body block
+    Caller-&gt;&gt;Eval: callable closure plus arguments
+    Eval-&gt;&gt;Eval: evaluate arguments
+    Eval-&gt;&gt;Frame: allocate child context under captured context
+    Eval-&gt;&gt;Frame: bind parameters
+    Frame-&gt;&gt;Frame: allocate activation frame on return stack
+    Eval-&gt;&gt;Body: evaluate body in child context
+    Body--&gt;&gt;Eval: result set
+    Eval-&gt;&gt;Frame: restore caller CUR END BLK CTX
+    Eval-&gt;&gt;Eval: release frame
+    Eval--&gt;&gt;Caller: result set
+</code></pre>
+<p>A normal closure return does not use <code>return</code>; it reaches the end of the body,
+restores saved caller state from the frame, and continues after the call.
+<code>return</code> is a separate non-local path (§7).</p>
+<h3 id="63-capture-and-promotion">6.3 Capture and promotion</h3>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;func creates a closure&quot;] --&gt; B[&quot;capture current context&quot;]
+    B --&gt; C{&quot;captured context is stack-local?&quot;}
+    C --&gt;|&quot;no&quot;| D[&quot;store captured managed or loader context&quot;]
+    C --&gt;|&quot;yes&quot;| E[&quot;check escape law: foreign dependent blocks?&quot;]
+    E --&gt;|&quot;violation&quot;| X[&quot;raise escape/capture&quot;]
+    E --&gt;|&quot;ok&quot;| F[&quot;promote context to managed heap&quot;]
+    F --&gt; G[&quot;redirect owning activation to managed copy&quot;]
+    G --&gt; D
+</code></pre>
+<p>A closure always captures a context identity. Promotion means the activation
+and its closures share one context, so mutation through either is visible to
+both. A stack context that never escapes is reclaimed with its activation.</p>
+<hr>
+<h2 id="7-non-local-return">7. Non-local return</h2>
+<p><code>return</code> reads the current block's site id, evaluates one expression, finds the
+nearest live activation with that site, restores that activation's saved state
+and jumps to its return address.</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Body as Deep body
+    participant Helper as Unaware helper
+    participant Target as Target activation
+    participant Caller as Caller
+    Caller-&gt;&gt;Target: call f
+    Target-&gt;&gt;Helper: call helper
+    Helper-&gt;&gt;Body: do block containing return
+    Body-&gt;&gt;Body: evaluate return argument
+    Body-&gt;&gt;Target: find frame with block site
+    Target-&gt;&gt;Target: restore SP RP IP CTX CUR END BLK
+    Target--&gt;&gt;Caller: result set
+    Note over Helper: helper epilogue never runs
+</code></pre>
+<ul>
+<li><code>return</code> outside a function, or with no matching frame, is a machine
+  fail-stop.</li>
+<li>A judge frame copies the enclosing site but is not an activation; <code>return</code>
+  skips it and returns from the real function.</li>
+<li>A CASE action is a zero-argument closure, so <code>return</code> inside it returns from
+  the action and CASE yields the value.</li>
+</ul>
+<hr>
+<h2 id="8-do-values-reduce-either">8. <code>do</code>, <code>values</code>, <code>reduce</code>, <code>either</code></h2>
+<p>These operations differ in which block is executed and how results are kept.</p>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;do block&quot;] --&gt; B[&quot;run in current context and activation&quot;]
+    B --&gt; C[&quot;return final result set&quot;]
+    D[&quot;either cond then else&quot;] --&gt; E[&quot;evaluate cond once&quot;]
+    E --&gt; F[&quot;run exactly one branch block&quot;]
+    F --&gt; C
+    G[&quot;values block&quot;] --&gt; H[&quot;run each form in sequence&quot;]
+    H --&gt; I[&quot;require exactly one result per form&quot;]
+    I --&gt; J[&quot;return all results&quot;]
+    K[&quot;reduce block&quot;] --&gt; L[&quot;run each form in sequence&quot;]
+    L --&gt; M[&quot;collapse each form to first result&quot;]
+    M --&gt; N[&quot;allocate managed block of values&quot;]
+    N --&gt; O[&quot;return one block&quot;]
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Executes block?</th>
+<th>Context</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>do</code></td>
+<td>yes</td>
+<td>current</td>
+<td>final result set</td>
+</tr>
+<tr>
+<td><code>either</code></td>
+<td>one branch</td>
+<td>current</td>
+<td>branch result set</td>
+</tr>
+<tr>
+<td><code>values</code></td>
+<td>yes, all forms</td>
+<td>current</td>
+<td>all results, one per form</td>
+</tr>
+<tr>
+<td><code>reduce</code></td>
+<td>yes, all forms</td>
+<td>current</td>
+<td>one managed block</td>
+</tr>
+<tr>
+<td><code>judge</code></td>
+<td>yes</td>
+<td>current</td>
+<td>result set or SIN!</td>
+</tr>
+<tr>
+<td>bare block</td>
+<td>no</td>
+<td>—</td>
+<td>the block value</td>
+</tr>
+</tbody>
+</table>
+<p>A managed block produced by <code>reduce</code> is data, not code. Executing it with
+<code>do</code>, <code>values</code>, <code>reduce</code> or <code>judge</code> is a machine fail-stop.</p>
+<hr>
+<h2 id="9-sin-propagation-and-judge">9. SIN! propagation and <code>judge</code></h2>
+<p>A SIN! is a value. <code>raise</code> is control flow.</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Caller
+    participant Judge as judge frame
+    participant Deep as Deep operation
+    participant Unwind as Raise unwind
+    Caller-&gt;&gt;Judge: judge block
+    Judge-&gt;&gt;Judge: push transparent frame copying site and bias
+    Judge-&gt;&gt;Deep: run block in place
+    Deep-&gt;&gt;Deep: raise err
+    Deep-&gt;&gt;Unwind: set pending SIN and unwind
+    Unwind-&gt;&gt;Unwind: walk frame chain for nearest judge in this task
+    Unwind-&gt;&gt;Judge: restore judge caller state
+    Judge--&gt;&gt;Caller: return SIN value
+    Note over Caller: execution continues after judge
+</code></pre>
+<ul>
+<li>The judge frame copies the enclosing activation's site and bias, so lexical
+  references inside the judged block resolve as if the judge were not there.</li>
+<li><code>return</code> inside a judged block unwinds through the judge to the enclosing
+  function.</li>
+<li>A raise with no judge ends the run as an uncaught SIN!.</li>
+<li>Judges are per task. A task raise is caught only by a judge in that task.</li>
+<li>Machine-integrity failures are not SIN!s; no judge catches them.</li>
+</ul>
+<hr>
+<h2 id="10-escape-time-binding-law">10. Escape-time binding law</h2>
+<p>A block that depends on an activation may be used while that activation is
+live, but may not escape it.</p>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;activation-dependent block&quot;] --&gt; B{&quot;boundary&quot;}
+    B --&gt;|&quot;frame exit&quot;| C[&quot;raise escape/return&quot;]
+    B --&gt;|&quot;closure argument same site&quot;| D[&quot;raise escape/argument&quot;]
+    B --&gt;|&quot;set-word into foreign context&quot;| E[&quot;raise escape/store&quot;]
+    B --&gt;|&quot;context capture or promotion&quot;| F[&quot;raise escape/capture&quot;]
+    B --&gt;|&quot;task body transport&quot;| G[&quot;raise escape/transport&quot;]
+    B --&gt;|&quot;used while origin live&quot;| H[&quot;legal&quot;]
+</code></pre>
+<p>The check happens at the boundary, before the illegal value is stored,
+returned, captured or transported. A judge receives the SIN!, never the
+illegal block. A closure is the portable executable form; a bare bound block
+is not.</p>
+<hr>
+<h2 id="11-tasks">11. Tasks</h2>
+<p>Tasks are cooperative and deterministic. There is no pre-emption and no
+parallel execution.</p>
+<pre><code class="language-mermaid">sequenceDiagram
+    participant Main
+    participant Sched as Scheduler record
+    participant T1 as Task 1
+    participant T2 as Task 2
+    Main-&gt;&gt;Main: spawn body
+    Main-&gt;&gt;Sched: create task record
+    Main-&gt;&gt;Sched: run-tasks saves main state
+    Sched-&gt;&gt;T1: restore task 1
+    T1-&gt;&gt;Sched: yield saves task 1
+    Sched-&gt;&gt;T2: restore task 2
+    T2-&gt;&gt;Sched: yield saves task 2
+    Sched-&gt;&gt;T1: round-robin
+    T1-&gt;&gt;Sched: finish marks task 1 done
+    Sched-&gt;&gt;T2: resume task 2
+    T2-&gt;&gt;Sched: finish
+    Sched--&gt;&gt;Main: NONE when no runnable task remains
+</code></pre>
+<p>Each task record saves IP, SP, RP, CUR, END, CTX, BLK, FRAME and state. A task
+runs only until <code>yield</code> or completion. A body that depends on the spawning
+activation is rejected before the task table changes.</p>
+<hr>
+<h2 id="12-worked-traces">12. Worked traces</h2>
+<h3 id="121-1-2-3">12.1 <code>+ 1 * 2 3</code></h3>
+<pre><code class="language-mermaid">flowchart TD
+    A[&quot;evaluate +&quot;] --&gt; B[&quot;native arity 2&quot;]
+    B --&gt; C[&quot;arg 1: INT 1&quot;]
+    B --&gt; D[&quot;arg 2: evaluate *&quot;]
+    D --&gt; E[&quot;native arity 2&quot;]
+    E --&gt; F[&quot;arg 1: INT 2&quot;]
+    E --&gt; G[&quot;arg 2: INT 3&quot;]
+    E --&gt; H[&quot;2 * 3 = 6&quot;]
+    C --&gt; I[&quot;1 + 6 = 7&quot;]
+    H --&gt; I
+    I --&gt; J[&quot;result 7&quot;]
+</code></pre>
+<h3 id="122-factory-closure">12.2 Factory closure</h3>
+<pre><code class="language-glon">make-adder: func [n] [ func [x] [ + x n ] ]
+add10: make-adder 10
+add10 5
+;; =&gt; 15
+</code></pre>
+<ol>
+<li><code>make-adder</code> is called with <code>n = 10</code>; its child context holds <code>n</code>.</li>
+<li>The body evaluates <code>func [x] [ + x n ]</code>, a literal body. The inner closure
+   captures the <code>make-adder</code> activation's context and has bias 0.</li>
+<li>The activation returns the closure. Its context is promoted to the managed
+   heap because the closure escapes.</li>
+<li><code>add10 5</code> creates a new context for <code>x</code>, parented to the captured context.</li>
+<li><code>+ x n</code> reads <code>x</code> from the current context and <code>n</code> from the captured parent.</li>
+</ol>
+<h3 id="123-mutable-counter">12.3 Mutable counter</h3>
+<pre><code class="language-glon">counter: func [] [ n: 0  func [] [ n: + n 1 ] ]
+c: counter
+c c c
+;; =&gt; 3
+</code></pre>
+<ul>
+<li><code>n: 0</code> has no existing binding, so it creates a local in the <code>counter</code>
+  activation.</li>
+<li>The inner closure captures that context; it is promoted on return.</li>
+<li>Each call to <code>c</code> finds the existing <code>n</code> in the captured parent and updates it.</li>
+<li>This is one shared captured context, not a copy per call.</li>
+</ul>
+<h3 id="124-non-local-return-through-unaware-code">12.4 Non-local return through unaware code</h3>
+<pre><code class="language-glon">helper: func [b] [ do b  99 ]
+outer:  func [] [ helper [ return 42 ]  0 ]
+outer
+;; =&gt; 42
+</code></pre>
+<p><code>return</code> inside the block sees the block's site (<code>outer</code>), evaluates 42, walks
+the frame chain to <code>outer</code>, restores its state and returns. <code>helper</code> never
+executes its <code>99</code> or its epilogue.</p>
+<h3 id="125-judge">12.5 Judge</h3>
+<pre><code class="language-glon">x: 1
+e: judge [ raise create-sin 'demo 'oops 7 ]
+x: + x 1
+x
+;; =&gt; 2
+</code></pre>
+<p><code>judge</code> runs the block. <code>raise</code> unwinds to the judge frame, which returns the
+SIN! as a value. The assignment after the judge runs normally.</p>
+<hr>
+<h2 id="13-state-change-summary">13. State-change summary</h2>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Affects</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>name: value</code></td>
+<td>nearest binding, else current context</td>
+</tr>
+<tr>
+<td>Parameter bind</td>
+<td>new activation context</td>
+</tr>
+<tr>
+<td>Closure creation</td>
+<td>captures a context; may promote it</td>
+</tr>
+<tr>
+<td><code>do</code></td>
+<td>no new context; executes in current</td>
+</tr>
+<tr>
+<td><code>either</code></td>
+<td>no new context; executes one branch block</td>
+</tr>
+<tr>
+<td><code>judge</code></td>
+<td>adds a transparent frame; catches raises</td>
+</tr>
+<tr>
+<td>Function call</td>
+<td>new context, frame, return-stack reservation</td>
+</tr>
+<tr>
+<td><code>return</code></td>
+<td>unwinds to the matching function frame</td>
+</tr>
+<tr>
+<td><code>raise</code></td>
+<td>unwinds to the nearest judge in the same task</td>
+</tr>
+<tr>
+<td><code>reduce</code></td>
+<td>allocates one managed block</td>
+</tr>
+<tr>
+<td><code>values</code></td>
+<td>does not allocate a result block itself</td>
+</tr>
+<tr>
+<td><code>s/+</code> etc.</td>
+<td>allocate a new managed string</td>
+</tr>
+<tr>
+<td><code>spawn</code></td>
+<td>creates one task record if the body passes the transport check</td>
+</tr>
+<tr>
+<td>GC</td>
+<td>reclaims unreachable managed objects; loader heap is permanent</td>
+</tr>
+</tbody>
+</table>
+</main>
+<footer>Generated from the pinned upstream Markdown at <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code>. The original Markdown is preserved under <a href="../source/">source/</a>.</footer>
+
+<script src="../assets/mermaid.min.js"></script>
+<script>
+(function () {
+  function render() {
+    var blocks = document.querySelectorAll('pre > code.language-mermaid');
+    if (!blocks.length || !window.mermaid) return;
+    blocks.forEach(function (code) {
+      var div = document.createElement('div');
+      div.className = 'mermaid';
+      div.textContent = code.textContent;
+      code.parentElement.replaceWith(div);
+    });
+    var dark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    window.mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: dark ? 'dark' : 'default' });
+    window.mermaid.run({ querySelector: '.mermaid' }).catch(function (err) {
+      console.error('Mermaid render failed', err);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', render);
+  else render();
+})();
+</script>
+
+</body>
+</html>

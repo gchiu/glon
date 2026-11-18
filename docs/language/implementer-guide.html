@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Implementer Guide</title>
+<style>
+:root { --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+        --accent:#2456a6; --code:#20262e; --ok:#1b6b42; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --code:#242a32; --ok:#7ad6a2; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:1040px; padding:0 16px 4rem; color:var(--fg); background:var(--bg);
+       font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3,h4 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .4rem; }
+h2 { font-size:clamp(1.25rem,3vw,1.55rem); margin:2.2rem 0 .6rem; }
+h3 { font-size:1.1rem; margin:1.6rem 0 .4rem; }
+p { margin:.55rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:inherit; overflow-wrap:normal; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.75rem 0; border-bottom:1px solid var(--line); margin-bottom:1.4rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover, .navlinks a:focus-visible { color:var(--accent); text-decoration:underline; }
+.pagelead { display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; margin:0 0 1rem;
+            font-size:.86rem; color:var(--muted); }
+.pagelead a { font-weight:600; }
+table { border-collapse:collapse; width:100%; margin:.8rem 0 1.2rem; font-size:.92rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .55rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+blockquote { border-left:3px solid var(--line); margin:1rem 0; padding:.5rem 1rem; color:var(--muted); background:var(--panel); }
+ul,ol { padding-left:1.4rem; }
+li { margin:.2rem 0; }
+.mermaid { overflow-x:auto; text-align:center; margin:1.2rem 0; }
+.mermaid svg { max-width:100%; height:auto; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; margin:1rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card h3 { margin:.1rem 0 .35rem; }
+.card p:last-child { margin-bottom:0; }
+.source-list { font-size:.9rem; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem; }
+@media (max-width:560px) {
+  body { padding:0 14px 3rem; }
+  .topnav { align-items:flex-start; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Site navigation">
+  <a class="brand" href="../">Glon</a>
+  <div class="navlinks">
+    <a href="../">Home</a>
+    <a href="index.html">Language</a>
+    <a href="../grammar/">Grammar</a>
+    <a href="../#challenges">Challenges</a>
+  </div>
+</nav>
+<main>
+<div class="pagelead"><a href="../source/GLON-IMPLEMENTER-GUIDE.md">View Markdown source</a> <span>Upstream commit <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></span></div>
+<h1 id="glon-independent-implementer-reading-guide">Glon Independent-Implementer Reading Guide</h1>
+<p>This is the shortest reading path for an implementer who must build a Glon
+reader/evaluator or a compatible host without consulting the C source for
+ordinary language behaviour.</p>
+<h2 id="1-read-in-this-order">1. Read in this order</h2>
+<table>
+<thead>
+<tr>
+<th>Order</th>
+<th>Document</th>
+<th>Why</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td><code>GLON-ALPHA-LAWS.md</code></td>
+<td>Normative contract: values, words, blocks, closures, equality, truth, reduce, parse, SIN!, escape law, limits.</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>GLON-LANGUAGE-SPEC.md</code></td>
+<td>Complete descriptive surface: source rules, value model, evaluation, core/library vocabulary, failure model, memory/limits.</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>GLON-SYNTAX-DIAGRAMS.md</code></td>
+<td>Verified lexical grammar and word-form precedence, including the item/form split.</td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>GLON-EVALUATION-MODEL.md</code></td>
+<td>How words resolve, how calls consume arguments, result sets, closures, <code>return</code>, <code>judge</code>, escape law, tasks.</td>
+</tr>
+<tr>
+<td>5</td>
+<td><code>GLON-HOST-ABI.md</code></td>
+<td>Native C session/embedding boundary and host-specific capabilities.</td>
+</tr>
+<tr>
+<td>6</td>
+<td><code>GLON-WASM-ABI.md</code></td>
+<td>Authoritative WASM ABI detail (original contract; the host guide is a summary).</td>
+</tr>
+<tr>
+<td>7</td>
+<td><code>GLON-ARCHITECTURE-MEMORY.md</code></td>
+<td>Decisions, memory map and measured limits.</td>
+</tr>
+</tbody>
+</table>
+<p>Use the named tests in <code>GLON-LANGUAGE-SPEC.md</code> §10 as the conformance corpus
+for each behaviour. The implementation source is needed only for unresolved or
+trapdoor details: exact <code>masm</code> mnemonics, GC object layout, host pointer
+formats and raw S1 addresses.</p>
+<h2 id="2-minimum-semantic-checklist">2. Minimum semantic checklist</h2>
+<p>An implementation is not Glon-compatible unless it has:</p>
+<ol>
+<li><strong>Tagged values</strong> with the Alpha tags and type-safe identity <code>=</code>.</li>
+<li><strong>Prefix, fixed-arity evaluation</strong> with eager left-to-right arguments and
+   no operator precedence.</li>
+<li><strong>Result sets</strong>: block evaluation keeps the last set; <code>do</code> returns it;
+   <code>values</code> returns all; <code>reduce</code> builds a managed block.</li>
+<li><strong>Contexts</strong>: dynamic lexical-chain lookup, nearest-binding set-word,
+   local creation when absent, 16-per-function and 256-global limits.</li>
+<li><strong>Closures</strong>: literal-body capture, computed-body origin capture, depth
+   bias, stack-context promotion on escape, portable closure bodies.</li>
+<li><strong>Definitional <code>return</code></strong> that unwinds to the matching function frame and
+   through <code>judge</code>/CASE action boundaries.</li>
+<li><strong>SIN!</strong> as a value, <code>raise</code> as per-task control flow, <code>judge</code> as the
+   nearest catcher; machine fail-stops are not catchable.</li>
+<li><strong>Escape law</strong> at return, argument, store, capture and transport
+   boundaries.</li>
+<li><strong>Immutable byte strings</strong> with the library operations in §5 of the spec.</li>
+<li><strong>Library words</strong> (<code>mk-string</code>, <code>get</code>, <code>lambda</code>, <code>does</code>, <code>block-len</code>,
+    <code>block-at</code>, <code>select</code>, <code>case</code>, <code>parse</code>, <code>s/...</code>, tasks) only when the
+    session actually loads them.</li>
+</ol>
+<h2 id="3-non-negotiable-lexical-facts">3. Non-negotiable lexical facts</h2>
+<ul>
+<li><code>[</code> and <code>]</code> are the structural delimiters; whitespace is the C <code>isspace</code>
+  set. There are no parentheses, commas or parser comments.</li>
+<li>A token is a maximal run excluding whitespace/<code>[</code>/<code>]</code>, truncated to 63
+  bytes, then interpreted in this order: exact <code>none</code>; trailing <code>:</code>;
+  leading <code>:</code>; leading <code>'</code>; otherwise word.</li>
+<li><code>'x</code> evaluates to a WORD, not a LIT-WORD.</li>
+<li>A string literal is recognized at item start only, has no escapes, is
+  limited to 512 bytes, and expands to <code>mk-string [bytes]</code>.</li>
+<li><code>func</code> is special-cased inside a block, not by the top-level program loop.</li>
+<li><code>masm</code>/<code>raw</code> arity is an optional non-negative decimal integer.</li>
+<li>If source begins with a block, trailing source bytes are ignored.</li>
+</ul>
+<h2 id="4-host-implementer-checklist">4. Host implementer checklist</h2>
+<ul>
+<li>Separate portable language semantics from host capabilities.</li>
+<li>Do not put routing, application names or domain rules in the host.</li>
+<li>For WASM, implement the exact import set and export set in
+  <code>GLON-WASM-ABI.md</code>; honour the one-execution-entry <code>glon_alloc</code> lifetime.</li>
+<li>Copy <code>glon_run</code> result text before the next <code>glon_run</code>.</li>
+<li>Recreate linear-memory views after calls because memory may grow.</li>
+<li>Do not re-enter the runtime from a host callback.</li>
+<li>Treat <code>** halted</code> as a machine fail-stop, not a catchable SIN!.</li>
+<li>Use <code>GLON-HOST-ABI.md</code> for the native session facade and the original
+  <code>GLON-WASM-ABI.md</code> for binary detail.</li>
+</ul>
+<h2 id="5-known-documentation-limits">5. Known documentation limits</h2>
+<p>Do not guess these from the current docs; they are recorded as unresolved or
+unchecked in <code>GLON-SPEC-VERIFICATION.md</code> §7:</p>
+<ul>
+<li>non-integer arithmetic/<code>print</code>, division by zero;</li>
+<li>non-block <code>do</code>/<code>either</code>, missing or extra arguments;</li>
+<li>non-block/duplicate/overfull <code>func</code> specs;</li>
+<li><code>return</code> with no following expression;</li>
+<li>nested/multi-result <code>values</code> and result-set collapse;</li>
+<li>token truncation collisions and host <code>;;</code> stripping inside strings;</li>
+<li><code>masm</code> empty-block validation;</li>
+<li>form adjacency (<code>a[1]</code>, <code>1"x"</code>, <code>a"b"</code>).</li>
+</ul>
+<p>If strict compatibility with the current implementation is required for those
+cases, read the specific test and the corresponding reader/evaluator routine;
+do not infer a contract from this guide.</p>
+</main>
+<footer>Generated from the pinned upstream Markdown at <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code>. The original Markdown is preserved under <a href="../source/">source/</a>.</footer>
+
+</body>
+</html>

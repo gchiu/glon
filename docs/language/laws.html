@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Alpha Language Laws</title>
+<style>
+:root { --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+        --accent:#2456a6; --code:#20262e; --ok:#1b6b42; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --code:#242a32; --ok:#7ad6a2; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:1040px; padding:0 16px 4rem; color:var(--fg); background:var(--bg);
+       font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3,h4 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .4rem; }
+h2 { font-size:clamp(1.25rem,3vw,1.55rem); margin:2.2rem 0 .6rem; }
+h3 { font-size:1.1rem; margin:1.6rem 0 .4rem; }
+p { margin:.55rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:inherit; overflow-wrap:normal; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.75rem 0; border-bottom:1px solid var(--line); margin-bottom:1.4rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover, .navlinks a:focus-visible { color:var(--accent); text-decoration:underline; }
+.pagelead { display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; margin:0 0 1rem;
+            font-size:.86rem; color:var(--muted); }
+.pagelead a { font-weight:600; }
+table { border-collapse:collapse; width:100%; margin:.8rem 0 1.2rem; font-size:.92rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .55rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+blockquote { border-left:3px solid var(--line); margin:1rem 0; padding:.5rem 1rem; color:var(--muted); background:var(--panel); }
+ul,ol { padding-left:1.4rem; }
+li { margin:.2rem 0; }
+.mermaid { overflow-x:auto; text-align:center; margin:1.2rem 0; }
+.mermaid svg { max-width:100%; height:auto; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; margin:1rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card h3 { margin:.1rem 0 .35rem; }
+.card p:last-child { margin-bottom:0; }
+.source-list { font-size:.9rem; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem; }
+@media (max-width:560px) {
+  body { padding:0 14px 3rem; }
+  .topnav { align-items:flex-start; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Site navigation">
+  <a class="brand" href="../">Glon</a>
+  <div class="navlinks">
+    <a href="../">Home</a>
+    <a href="index.html">Language</a>
+    <a href="../grammar/">Grammar</a>
+    <a href="../#challenges">Challenges</a>
+  </div>
+</nav>
+<main>
+<div class="pagelead"><a href="../source/GLON-ALPHA-LAWS.md">View Markdown source</a> <span>Upstream commit <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></span></div>
+<h1 id="glon-alpha-language-laws">Glon Alpha — Language Laws</h1>
+<p>This is the authoritative contract for the Glon Alpha language. It is not a
+tutorial. A fresh machine should read this before writing Glon.</p>
+<p>Frozen S1 substrate: <code>f90496c…</code> (s1.c / s1.h / tests.c / adversarial.c / claims.c).
+The runtime (<code>r0_s1_runtime.c</code>) is emitted S1 above that substrate.</p>
+<h2 id="1-value-model">1. Value model</h2>
+<p>Every value is one cell: <code>payload * 16 + tag</code>, where <code>tag</code> is the low 4 bits.</p>
+<table>
+<thead>
+<tr>
+<th>tag</th>
+<th>kind</th>
+<th>payload</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>INT</td>
+<td>signed integer</td>
+</tr>
+<tr>
+<td>1</td>
+<td>NONE</td>
+<td>0</td>
+</tr>
+<tr>
+<td>2</td>
+<td>WORD</td>
+<td>symbol id</td>
+</tr>
+<tr>
+<td>3</td>
+<td>SET-WORD</td>
+<td>symbol id</td>
+</tr>
+<tr>
+<td>4</td>
+<td>GET-WORD</td>
+<td>symbol id</td>
+</tr>
+<tr>
+<td>5</td>
+<td>LIT-WORD</td>
+<td>symbol id</td>
+</tr>
+<tr>
+<td>6</td>
+<td>BLOCK</td>
+<td>16-aligned block payload address</td>
+</tr>
+<tr>
+<td>7</td>
+<td>CONTEXT</td>
+<td>context payload address</td>
+</tr>
+<tr>
+<td>8</td>
+<td>CLOSURE</td>
+<td>16-aligned closure payload address</td>
+</tr>
+<tr>
+<td>9</td>
+<td>NATIVE</td>
+<td>native id</td>
+</tr>
+<tr>
+<td>10</td>
+<td>RAW</td>
+<td>raw payload address</td>
+</tr>
+<tr>
+<td>11</td>
+<td>USER</td>
+<td>user object payload address</td>
+</tr>
+<tr>
+<td>12</td>
+<td>STRING</td>
+<td>16-aligned string payload address</td>
+</tr>
+<tr>
+<td>13</td>
+<td>BOUND</td>
+<td>(depth*16 + slot)</td>
+</tr>
+<tr>
+<td>14</td>
+<td>SIN</td>
+<td>16-aligned SIN! payload address (see §6a)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="2-words">2. Words</h2>
+<ul>
+<li>A <code>WORD</code> is looked up dynamically in the current context (lexical parent
+  chain), not re-lexicalised.</li>
+<li>A <code>BOUND</code> value is a pre-resolved relative lexical reference
+  <code>(depth, slot)</code> against the current context, biased by the activation's
+  <code>FRAME_BIAS</code> ("Guard of Binding").</li>
+<li>Word-like values (<code>WORD</code> / <code>SET</code> / <code>GET</code> / <code>LIT</code>) compare by symbol id.</li>
+<li><strong>Qualified names.</strong> A <code>/</code> inside a word is part of the word: <code>s/+</code> is one
+  word (<code>s/+:</code> sets it, <code>:s/+</code> gets it, <code>'s/+</code> is its literal form), and a bare
+  <code>/</code> is still integer division. An interior <code>/</code> is reserved for qualified,
+  path-like names (<code>domain/operation</code>). For now such names are ordinary flat
+  words in the usual contexts; no path evaluation, qualified lookup,
+  namespaces or contexts exist yet.</li>
+</ul>
+<h2 id="3-blocks">3. Blocks</h2>
+<ul>
+<li>A block is structured data / a description. Its layout is
+  <code>[count, site_id, elem…]</code>; loader blocks and managed blocks (from <code>reduce</code>)
+  share this operational layout.</li>
+<li>A block does <strong>not</strong> carry activation identity — only a static <code>BLK_SITE</code>.</li>
+<li>A bare block is <strong>not a portable lexical executable object</strong>. A bare block
+  containing <code>BOUND</code> references is valid only while executed under an activation
+  whose <code>FRAME_SITE</code> equals its <code>BLK_SITE</code>. Executing it elsewhere fails loudly
+  (fail-stop), never silently resolving against an unrelated activation.</li>
+<li>Known limitation: under same-site recursion, two live activations share a
+  <code>FRAME_SITE</code>, so a travelling bare bound block resolves against the innermost
+  matching activation. The same holds for a block whose creating activation is
+  dead but which is <code>do</code>ne inside a <em>later</em> activation of the same function: it
+  resolves against that later activation. Use a closure when
+  activation-specific capture is required.</li>
+<li><code>do</code> runs a block in the <strong>current</strong> context. A block passed into another
+  function and <code>do</code>ne there resolves its plain (<code>T_WORD</code>) words dynamically in
+  that function's context, so they can be captured by the callee's names. User
+  control forms should turn caller blocks into closures (as <code>case</code> does), not
+  <code>do</code> them.</li>
+</ul>
+<h2 id="4-closures">4. Closures</h2>
+<ul>
+<li>A closure is an executable value: <code>[spec, body, captured-ctx, site, bias]</code>.</li>
+<li><code>CLOSURE_CTX</code> captures the <strong>actual</strong> lexical context identity; a captured
+  stack-local context is promoted to the managed heap on escape. Promotion
+  redirects the owning activation onto the managed copy, so the activation and
+  all its closures share one context (mutation is visible both ways).</li>
+<li>A closure is the <strong>portable executable form</strong>; it keeps its captured ancestry
+  even after its creator returns and across same-site recursion.</li>
+<li>Closure-origin binding (the Guard of Binding), by body kind:</li>
+<li>a <strong>literal</strong> body (<code>func SPEC [...]</code>) is the new func's own scope:
+    capture the current context, bias 0;</li>
+<li>a <strong>computed</strong> body (<code>func :spec :body</code>, <code>func [] block-at rows i</code>) keeps
+    the lexical meaning it was parsed with. A top-level block binds to the
+    global context. Otherwise the nearest live frame of the block's site is its
+    origin: that activation's context (bias-0 frame), or the origin captured by
+    a closure made from one of its blocks (bias-1 frame). Capture it, bias +1;</li>
+<li>a computed body whose origin activation is <strong>dead</strong> yields a closure whose
+    <code>T_BOUND</code> references fail-stop (it never resolves against another context).</li>
+<li>A func spec's words are never lexically resolved: an inner parameter shadows
+  a same-named outer parameter.</li>
+</ul>
+<h2 id="5-func-lambda-does">5. func / lambda / does</h2>
+<ul>
+<li><code>func</code> is the base closure constructor (a reserved keyword).</li>
+<li><code>lambda</code> and <code>does</code> are ordinary Glon built from <code>func</code>; they imply no new
+  primitive.</li>
+<li><code>func</code> fails loudly when its body is not a block.</li>
+</ul>
+<h2 id="5a-case">5a. case</h2>
+<ul>
+<li><code>case [ [cond-1] [action-1] [cond-2] [action-2] ... ]</code> is ordinary Glon
+  (<code>demo/shop/case.glon</code>, an optional library loaded after bootstrap like
+  <code>parse.glon</code>), built from <code>func</code>, <code>invoke</code>, <code>either</code>,
+  <code>block-at</code>/<code>block-len</code>. It implies no new primitive.</li>
+<li>Conditions are evaluated in order; the first truthy one runs its action, and
+  CASE returns the action's result. Later conditions/actions are not evaluated.
+  No match returns <code>NONE</code>. A condition without an action fails loudly.</li>
+<li>Conditions are <strong>blocks</strong>, not inline expressions: Glon has no way to evaluate
+  one expression of a block at a time from Glon code.</li>
+<li>Each condition/action runs as a zero-argument closure bound to its lexical
+  origin, so words resolve exactly as if written in the enclosing function,
+  including assignment. <code>RETURN</code> inside an action returns from that action
+  (CASE yields the value), not from the enclosing function.</li>
+<li>Each tested clause allocates one closure, and the first one promotes the
+  enclosing activation's context to the managed heap. Recursion through
+  CASE-using functions is therefore bounded by live promoted contexts (about
+  25 levels with the current heap).</li>
+</ul>
+<h2 id="6-invoke">6. invoke</h2>
+<ul>
+<li><code>invoke</code> evaluates one closure-producing expression and hands control to the
+  resulting closure, which consumes its own arity from the same expression
+  stream. Non-closure invocation fails safely.</li>
+</ul>
+<h2 id="6a-sin-raise-judge">6a. SIN!, raise, judge</h2>
+<p>An error value and error propagation are separate things.</p>
+<ul>
+<li><strong>SIN! is a value.</strong> <code>create-sin type id arg</code> builds one: <code>type</code> and <code>id</code>
+  are conventionally words, <code>arg</code> is any value. Holding, passing, storing,
+  returning or comparing a SIN! never raises. <code>sin? v</code> is 1 for a SIN!
+  and 0 otherwise; <code>sin-type</code>, <code>sin-id</code> and <code>sin-arg</code> read its fields.
+  A SIN! equals only itself (§9).</li>
+<li><strong><code>raise err</code> propagates.</strong> It abandons the current operation and unwinds
+  through any number of unaware callers to the nearest <code>judge</code> in the same
+  task. <code>raise</code> of a non-SIN! raises <code>'type 'raise</code> carrying that value.</li>
+<li><strong><code>judge block</code></strong> runs <code>block</code> in place, in the current activation, like
+  <code>do</code>. If the block completes, <code>judge</code> returns its result. If anything in it
+  raises, <code>judge</code> returns the SIN! and execution continues after the <code>judge</code>.
+  Nested judges: the nearest one catches.</li>
+<li><code>return</code> inside a judge body returns from the enclosing function, unwinding
+  through the judge.</li>
+<li><strong>Uncaught:</strong> with no judge, a raise ends the run exactly as a fail-stop
+  does (the run is not clean). The host can read the uncaught error.</li>
+<li><strong>Tasks:</strong> judges are per task. An error raised in a task is caught only by
+  a judge in that task; unjudged, it ends the run. A judge in the main world
+  does not catch a task's error.</li>
+<li><strong>Runtime errors.</strong> An accessor applied to a non-SIN! raises <code>'type
+  'sin-field</code>; <code>judge</code> of a non-block raises <code>'type 'judge</code>. The escape-time
+  binding law raises <code>'escape</code> with id <code>'return</code>, <code>'argument</code>, <code>'store</code>,
+  <code>'capture</code> or <code>'transport</code> (the boundary that detected the violation) and
+  arg = the offending block's site id. The violating operation is abandoned
+  before it completes; a judge never receives the illegal value.</li>
+<li>Machine-integrity failures (heap/stack corruption, out of memory,
+  return-stack exhaustion) are not SIN!s: they still fail-stop and cannot
+  be judged.</li>
+</ul>
+<h2 id="7-reduce">7. reduce</h2>
+<ul>
+<li><code>reduce block</code> evaluates each source expression once, left-to-right, reduces
+  each to a single value, and returns a managed block of those values.</li>
+</ul>
+<h2 id="8-parse">8. parse</h2>
+<ul>
+<li><code>parse</code> is optional pure-Glon structural recognition. Input and rules are
+  blocks. Operators: <code>skip</code>, <code>alt [A] [B]</code>, <code>opt [A]</code>, <code>some [A]</code>, <code>any [A]</code>;
+  any other rule value is a literal matched with <code>=</code>.</li>
+<li>Full-match law: <code>parse input rules</code> is true only if the rules succeed and
+  consume the whole input.</li>
+<li><code>-1</code> is the internal impossible-cursor failure sentinel.</li>
+<li>Alpha PARSE has no actions, captures, string parsing, or <code>into</code>.</li>
+</ul>
+<h2 id="9-equality">9. Equality</h2>
+<ul>
+<li><code>=</code> is type-safe identity:</li>
+<li>word-like values (<code>WORD</code>/<code>SET</code>/<code>GET</code>/<code>LIT</code>) compare by symbol id;</li>
+<li>every other value compares by full tagged cell identity.</li>
+<li>Consequences: <code>NONE != 0</code>; a word never equals an integer; a block/closure
+  equals only itself (identity). String <em>content</em> equality is <code>s/=</code> (also
+  spelled <code>str-eq</code>), not <code>=</code>.</li>
+</ul>
+<h2 id="9a-string">9a. STRING!</h2>
+<ul>
+<li>A STRING! is an <strong>immutable</strong> sequence of bytes: a managed payload
+  <code>[length, byte0 .. byteN-1]</code> with one byte (0..255) per cell. Any byte value,
+  including 0, can be stored; there are no C-string or Unicode semantics. A
+  quoted literal <code>"..."</code> is built by <code>mk-string</code> (up to 512 bytes per literal).</li>
+<li>No operation changes an existing string:</li>
+<li><code>s/+ a b</code> returns a <strong>new</strong> string holding <code>a</code>'s bytes then <code>b</code>'s;</li>
+<li><code>s/= a b</code> is 1 if <code>a</code> and <code>b</code> hold the same bytes, else 0 (<code>str-eq</code> is the
+    same word);</li>
+<li><code>s/length a</code> is the number of stored <strong>bytes</strong>;</li>
+<li><code>s/print a</code> writes <code>a</code>'s bytes and then a newline to the output and
+    returns no value (<code>print</code> prints integers only).</li>
+<li>A non-STRING! argument raises a SIN! of type <code>type</code> whose id is the
+  operation's name and whose arg is the offending value. These are ordinary
+  functions: both arguments are evaluated first, then the first non-string is
+  reported.</li>
+<li>These are library code, not runtime natives: <code>str-eq</code> (the one equality
+  algorithm) is in <code>demo/shop/common.glon</code>, and <code>s/+ s/= s/length s/print</code> are
+  in <code>demo/shop/strings.glon</code>, built on the runtime's general mechanisms
+  (managed allocation, byte access, frozen S1's byte output). Jupyter and
+  Saturnine sessions load <code>strings.glon</code>; a page that needs only <code>str-eq</code>
+  (the shop, the traffic simulator) does not.</li>
+<li><strong>Optional extension</strong> (<code>demo/shop/strings-ext.glon</code>,
+  loaded after <code>strings.glon</code> by the sessions that need it; no session loads it
+  by default). Indices are 0-based <strong>byte</strong> offsets; ranges are half-open,
+  <code>[start, end)</code>, with no negative indices and no clamping:</li>
+<li><code>s/at s i</code> is the byte (0..255) at index <code>i</code>, or <code>none</code> when <code>i</code> is
+    outside <code>[0, length)</code>;</li>
+<li><code>s/slice s start n</code> is a <strong>new</strong> string of the <code>n</code> bytes from <code>start</code>. It
+    requires <code>0 &lt;= start</code>, <code>0 &lt;= n</code> and <code>start + n &lt;= length</code>, and otherwise
+    raises a SIN! of type <code>range</code>, id <code>s/slice</code>, arg <code>[start n]</code>;</li>
+<li><code>s/span s start end</code> is a <strong>new</strong> string of the bytes in <code>[start, end)</code>,
+    equal to <code>s/slice s start end - start</code>. It requires
+    <code>0 &lt;= start &lt;= end &lt;= length</code>, and otherwise raises a SIN! of type <code>range</code>,
+    id <code>s/span</code>, arg <code>[start end]</code>;</li>
+<li><code>s/scan-set s i set</code> is the first index <code>&gt;= i</code> whose byte is not one of the
+    bytes of the string <code>set</code>, or the length if there is none. <code>i</code> is clamped
+    to <code>[0, length]</code>: extraction is strict, but scanning at or beyond the end
+    is a normal state (the input is exhausted) and answers the length;</li>
+<li><code>s/from-int n</code> is the decimal text of the integer <code>n</code>.</li>
+</ul>
+<p>A wrong argument type raises <code>type</code> with the operation's name as the id, as
+  above. These operations work on <strong>bytes</strong>: a UTF-8 character of several
+  bytes is several indices, <code>s/slice</code> and <code>s/span</code> can split one, and a <code>set</code>
+  is a set of bytes. Integers are tagged cells, about ±2^59 natively and ±2^27
+  in the 32-bit WebAssembly build.</p>
+<p>The module's <code>s/raw-...</code> masm workers are unchecked and must be called only
+  through these validated wrappers: given a bad index or count they read or
+  write outside the string.</p>
+<h2 id="10-truth">10. Truth</h2>
+<ul>
+<li><code>NONE</code> and integer <code>0</code> are falsey; every other value is truthy.</li>
+</ul>
+<h2 id="11-memory">11. Memory</h2>
+<ul>
+<li>The S1 substrate is frozen; the runtime lives above it.</li>
+<li>The managed heap is a non-moving mark/sweep collector; the loader heap is
+  permanent and never swept.</li>
+<li>GC-safepoint invariant: at every GC-capable allocation, all GC-scanned state
+  (data stack, return stack, roots) holds only valid tagged Glon values.</li>
+<li><strong>Context capacity (an implementation limit):</strong> contexts have fixed
+  capacities: the global context holds 256 bindings and a function's context
+  holds 16 (<code>R0S1_CTX_CAP</code>). Adding a new binding (a set-word with no existing
+  binding, or a bound parameter) to a full context is detected <strong>before any
+  mutation</strong>: the machine fail-stops with the structured reason <code>CONTEXT_FULL</code>
+  (<code>r0_s1_halt_reason</code>). This is a machine/resource failure, not a <code>SIN!</code>, so
+  <code>judge</code> cannot catch it, and the rejected write leaves existing state
+  uncorrupted. The capacities are implementation limits intended for later
+  removal, not language semantics.</li>
+<li><strong>Known limit:</strong> the current 256-binding global-context ceiling can still be
+  reached by sufficiently large combined workloads (for example, a session
+  that loads traffic plus two extra models needs 280 bindings; the shipped
+  traffic page does not offer that session shape). The runtime detects this
+  before writing and fail-stops with <code>CONTEXT_FULL</code>; the ceiling remains an
+  implementation limit scheduled for later removal.</li>
+</ul>
+<h2 id="12-tasks-tuple-space">12. Tasks / tuple space</h2>
+<ul>
+<li>Cooperative, deterministic single-world tasks; Linda-style tuple
+  coordination. No claim of multicore/distributed execution.</li>
+<li>Every shipped task-creation word (<code>mnew-task</code> in linda, merchant-flow,
+  tuple-space and examples/multitasking.r0) calls the runtime's shared
+  <code>ESC_TRANSPORT</code> check on the still-tagged body before touching the task
+  table: an activation-dependent body raises <code>'escape 'transport</code> and no task
+  is created (escape law boundary 5).</li>
+</ul>
+<h2 id="13-visual-host">13. Visual host</h2>
+<ul>
+<li>The graph-scene / canvas protocol is emitted by Glon; the JS/browser is a
+  host, not application semantics.</li>
+</ul>
+<h2 id="14-explicit-non-features-deferred">14. Explicit non-features (deferred)</h2>
+<p><code>SWITCH</code>, <code>EACH</code>/<code>FOREACH</code>, Rebol-style inline-condition <code>CASE</code> and <code>/ALL</code>,
+full Rebol PARSE, string PARSE, PARSE
+<code>into</code>, <code>type?</code>, Rebol-style portable bound blocks, distributed closures.
+Post-Alpha language changes require evidence from real machine-written
+applications or a demonstrated correctness defect.</p>
+</main>
+<footer>Generated from the pinned upstream Markdown at <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code>. The original Markdown is preserved under <a href="../source/">source/</a>.</footer>
+
+</body>
+</html>

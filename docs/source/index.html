@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Glon Source Documents</title>
+<style>
+:root { --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+        --accent:#2456a6; --code:#20262e; --ok:#1b6b42; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --code:#242a32; --ok:#7ad6a2; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:1040px; padding:0 16px 4rem; color:var(--fg); background:var(--bg);
+       font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3,h4 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .4rem; }
+h2 { font-size:clamp(1.25rem,3vw,1.55rem); margin:2.2rem 0 .6rem; }
+h3 { font-size:1.1rem; margin:1.6rem 0 .4rem; }
+p { margin:.55rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:inherit; overflow-wrap:normal; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.75rem 0; border-bottom:1px solid var(--line); margin-bottom:1.4rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover, .navlinks a:focus-visible { color:var(--accent); text-decoration:underline; }
+.pagelead { display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; margin:0 0 1rem;
+            font-size:.86rem; color:var(--muted); }
+.pagelead a { font-weight:600; }
+table { border-collapse:collapse; width:100%; margin:.8rem 0 1.2rem; font-size:.92rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .55rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+blockquote { border-left:3px solid var(--line); margin:1rem 0; padding:.5rem 1rem; color:var(--muted); background:var(--panel); }
+ul,ol { padding-left:1.4rem; }
+li { margin:.2rem 0; }
+.mermaid { overflow-x:auto; text-align:center; margin:1.2rem 0; }
+.mermaid svg { max-width:100%; height:auto; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; margin:1rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card h3 { margin:.1rem 0 .35rem; }
+.card p:last-child { margin-bottom:0; }
+.source-list { font-size:.9rem; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem; }
+@media (max-width:560px) {
+  body { padding:0 14px 3rem; }
+  .topnav { align-items:flex-start; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Site navigation">
+  <a class="brand" href="../">Glon</a>
+  <div class="navlinks">
+    <a href="../">Home</a>
+    <a href="../language/">Language</a>
+    <a href="../grammar/">Grammar</a>
+    <a href="../#challenges">Challenges</a>
+  </div>
+</nav>
+<main>
+
+
+<header><h1>Glon Source Documents</h1>
+<p class="muted">Original Markdown preserved verbatim from upstream commit <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code>.</p></header>
+<section><h2>Markdown</h2><ul><li><a href="GLON-ALPHA-LAWS.md">GLON-ALPHA-LAWS.md</a> — Alpha Language Laws (<a href="../language/laws.html">rendered HTML</a>)</li>
+<li><a href="GLON-LANGUAGE-SPEC.md">GLON-LANGUAGE-SPEC.md</a> — Language Specification (<a href="../language/spec.html">rendered HTML</a>)</li>
+<li><a href="GLON-EVALUATION-MODEL.md">GLON-EVALUATION-MODEL.md</a> — Evaluation Model (<a href="../language/evaluation.html">rendered HTML</a>)</li>
+<li><a href="GLON-SYNTAX-DIAGRAMS.md">GLON-SYNTAX-DIAGRAMS.md</a> — Syntax Diagrams (<a href="../language/syntax-diagrams.html">rendered HTML</a>)</li>
+<li><a href="GLON-HOST-ABI.md">GLON-HOST-ABI.md</a> — Host ABI (<a href="../language/host-abi.html">rendered HTML</a>)</li>
+<li><a href="GLON-WASM-ABI.md">GLON-WASM-ABI.md</a> — WASM ABI (<a href="../language/wasm-abi.html">rendered HTML</a>)</li>
+<li><a href="GLON-SPEC-VERIFICATION.md">GLON-SPEC-VERIFICATION.md</a> — Specification Verification (<a href="../language/verification.html">rendered HTML</a>)</li>
+<li><a href="GLON-IMPLEMENTER-GUIDE.md">GLON-IMPLEMENTER-GUIDE.md</a> — Implementer Guide (<a href="../language/implementer-guide.html">rendered HTML</a>)</li>
+<li><a href="GLON-AI-AUTHORING.md">GLON-AI-AUTHORING.md</a> — AI Authoring Guide (<a href="../language/ai-authoring.html">rendered HTML</a>)</li>
+<li><a href="GLON-PRIMER.md">GLON-PRIMER.md</a> — Glon Primer (<a href="../language/primer.html">rendered HTML</a>)</li></ul></section>
+<section><h2>Grammar</h2><ul><li><a href="glon-grammar.ebnf">glon-grammar.ebnf</a> — machine-readable reader grammar</li></ul></section>
+
+</main>
+<footer>Generated from the pinned upstream Markdown at <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code>. The original Markdown is preserved under <a href="../source/">source/</a>.</footer>
+
+</body>
+</html>

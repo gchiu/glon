@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Specification Verification</title>
+<style>
+:root { --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+        --accent:#2456a6; --code:#20262e; --ok:#1b6b42; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --code:#242a32; --ok:#7ad6a2; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:1040px; padding:0 16px 4rem; color:var(--fg); background:var(--bg);
+       font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3,h4 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .4rem; }
+h2 { font-size:clamp(1.25rem,3vw,1.55rem); margin:2.2rem 0 .6rem; }
+h3 { font-size:1.1rem; margin:1.6rem 0 .4rem; }
+p { margin:.55rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:inherit; overflow-wrap:normal; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.75rem 0; border-bottom:1px solid var(--line); margin-bottom:1.4rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover, .navlinks a:focus-visible { color:var(--accent); text-decoration:underline; }
+.pagelead { display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; margin:0 0 1rem;
+            font-size:.86rem; color:var(--muted); }
+.pagelead a { font-weight:600; }
+table { border-collapse:collapse; width:100%; margin:.8rem 0 1.2rem; font-size:.92rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .55rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+blockquote { border-left:3px solid var(--line); margin:1rem 0; padding:.5rem 1rem; color:var(--muted); background:var(--panel); }
+ul,ol { padding-left:1.4rem; }
+li { margin:.2rem 0; }
+.mermaid { overflow-x:auto; text-align:center; margin:1.2rem 0; }
+.mermaid svg { max-width:100%; height:auto; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; margin:1rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card h3 { margin:.1rem 0 .35rem; }
+.card p:last-child { margin-bottom:0; }
+.source-list { font-size:.9rem; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem; }
+@media (max-width:560px) {
+  body { padding:0 14px 3rem; }
+  .topnav { align-items:flex-start; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Site navigation">
+  <a class="brand" href="../">Glon</a>
+  <div class="navlinks">
+    <a href="../">Home</a>
+    <a href="index.html">Language</a>
+    <a href="../grammar/">Grammar</a>
+    <a href="../#challenges">Challenges</a>
+  </div>
+</nav>
+<main>
+<div class="pagelead"><a href="../source/GLON-SPEC-VERIFICATION.md">View Markdown source</a> <span>Upstream commit <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></span></div>
+<h1 id="glon-specification-verification">Glon Specification Verification</h1>
+<p><strong>Date:</strong> 2026-11-17
+<strong>Scope:</strong> documentation-only verification of <code>GLON-LANGUAGE-SPEC.md</code>,
+<code>GLON-SYNTAX-DIAGRAMS.md</code>, <code>GLON-EVALUATION-MODEL.md</code>, and <code>GLON-HOST-ABI.md</code>
+against the implemented reader/evaluator and the original ABI document. No
+implementation, frozen S1, prelude, application or test file was changed.</p>
+<hr>
+<h2 id="1-original-abispecification-and-rebolek">1. Original ABI/specification and Rebolek</h2>
+<h3 id="11-search-result">1.1 Search result</h3>
+<p>A search of this worktree, the main worktree, all reachable refs, all
+unreachable Git objects, and the local project notes/downloads found <strong>no Glon
+artifact that names Rebolek</strong>. There is no file, commit message, tag, or Git
+note in this repository that records such an attribution.</p>
+<p>The only local mention of Rebolek found outside the source tree is a project
+memory note, not an ABI or specification:</p>
+<ul>
+<li><code>/mnt/c/Users/anon_/Downloads/glon-memory-handoff-2026-10-10.md</code>
+  (<code>## Recoil / Rebolek side note</code>, lines 245–251).
+  It records that Graham considered asking Rebolek about his work and says
+  public docs do not clearly expose a Glon VM implementation. It contains no
+  Glon ABI.</li>
+</ul>
+<p>Therefore this verification does <strong>not</strong> claim that any repository file was
+"prepared for Rebolek". If an external copy exists outside these paths, it was
+not available to this audit.</p>
+<h3 id="12-the-original-abi-documents-that-do-exist">1.2 The original ABI documents that do exist</h3>
+<table>
+<thead>
+<tr>
+<th>Document</th>
+<th>Exact path</th>
+<th>First commit</th>
+<th>Date</th>
+<th>Role</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Glon WASM ABI</td>
+<td><code>GLON-WASM-ABI.md</code></td>
+<td><code>e2edb0086664a7ad44c1487299933cda365d80a2</code> ("Document the Glon WASM ABI")</td>
+<td>2026-10-06</td>
+<td>The detailed, current/provisional WASM binary boundary.</td>
+</tr>
+<tr>
+<td>Transient allocation lifetime</td>
+<td><code>GLON-WASM-ABI.md</code> §3.2, §10</td>
+<td><code>3f5780037a09069c24413b3c41015819049be22e</code> ("Fix transient Glon WASM ABI allocation lifetime"), tag <code>glon-wasm-abi-d11.6</code></td>
+<td>2026-10-05</td>
+<td>D11.6 one-execution-entry pointer lifetime.</td>
+</tr>
+<tr>
+<td>Host capability architecture</td>
+<td><code>GLON-HOST-CAPABILITIES.md</code></td>
+<td><code>92e7e9a3f627a4a94c09576309187f1a5e65669e</code> ("Document Glon host capability architecture")</td>
+<td>2026-10-04</td>
+<td>Host capability/permission model, not the binary ABI.</td>
+</tr>
+<tr>
+<td>Language laws</td>
+<td><code>GLON-ALPHA-LAWS.md</code></td>
+<td><code>b178567f9b86af248752b816a61545b048a4eb5b</code> ("Document Glon Alpha language laws")</td>
+<td>2026-09-22</td>
+<td>Normative language contract, not the host ABI.</td>
+</tr>
+</tbody>
+</table>
+<p><code>GLON-HOST-ABI.md</code> is explicitly a derivative: for the WASM boundary,
+<code>GLON-WASM-ABI.md</code> and <code>standalone/glon.c</code> remain authoritative. The original
+contract was not replaced.</p>
+<hr>
+<h2 id="2-comparison-glon-wasm-abimd-vs-glon-host-abimd">2. Comparison: <code>GLON-WASM-ABI.md</code> vs <code>GLON-HOST-ABI.md</code></h2>
+<h3 id="21-agreements">2.1 Agreements</h3>
+<ul>
+<li>Both mark the WASM ABI <strong>current/provisional</strong>, with no version constant or
+  compatibility guarantee; both point to <code>standalone/glon.c</code> as source of truth.</li>
+<li>Same module variants: W2 standalone, G1A shop, GLON_LIVE.</li>
+<li>Same common exports: <code>glon_alloc</code>, <code>glon_init</code>, <code>glon_load</code>, <code>glon_call</code>,
+  <code>glon_run</code>, <code>glon_result_ptr</code>, <code>glon_result_len</code>, <code>memory</code>.</li>
+<li>Same host imports: <code>host_print</code>, <code>host_set_text</code>, <code>host_set_html</code>,
+  <code>host_canvas_script</code>, and GLON_LIVE <code>host_call</code>.</li>
+<li>Same G1A exports: <code>glon_route</code>, <code>glon_event</code>, <code>glon_event_value</code>; GLON_LIVE
+  adds <code>glon_event_bytes</code>.</li>
+<li>Same execution-entry lifetime rule: <code>glon_alloc</code> pointers are valid only
+  until the next <code>glon_load</code>/<code>glon_call</code>/<code>glon_route</code>/<code>glon_event</code>/
+  <code>glon_event_value</code>/<code>glon_event_bytes</code>/<code>glon_run</code>.</li>
+<li>Same arena model: separate 64 KiB transient <code>abi_heap</code>, 8-byte alignment,
+  <code>len + 1</code> reserved, reset at each execution entry.</li>
+<li>Same source/token/value limits: source &lt; 16 KiB; <code>glon_call</code> name &lt;= 60;
+  route/event token &lt;= 63; <code>glon_event_value</code> value &lt;= 200; <code>glon_event_bytes</code>
+  data &lt;= 12000; rendered HTML 16 KiB; canvas 2560 bytes.</li>
+<li>Same result lifetime: <code>glon_run</code> result buffer is static, replaced by the
+  next <code>glon_run</code>; route/event output goes through imports, not the result
+  buffer.</li>
+<li>Same singleton/re-entrancy rule: one global machine, serialised calls, no
+  re-entry from host callbacks.</li>
+<li>Same tested-host list and same <code>./check-frozen-s1.sh</code> role.</li>
+</ul>
+<h3 id="22-omissions-in-the-derivative-now-recorded-or-corrected">2.2 Omissions in the derivative (now recorded or corrected)</h3>
+<table>
+<thead>
+<tr>
+<th>Original detail</th>
+<th>Status in <code>GLON-HOST-ABI.md</code></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>glon_init</code> is idempotent and seeds M1 cells</td>
+<td>Added in §4.2.</td>
+</tr>
+<tr>
+<td><code>glon_alloc</code> reserves <code>len + 1</code> and is 8-byte aligned</td>
+<td>Present in §4.4.</td>
+</tr>
+<tr>
+<td><code>host_set_html</code> handle is hard-coded to 1</td>
+<td>Present in §4.3.</td>
+</tr>
+<tr>
+<td><code>host_canvas_script</code> is called after every dispatch, possibly empty</td>
+<td>Added in §4.3.</td>
+</tr>
+<tr>
+<td><code>glon_run</code> result buffer is 4 KiB</td>
+<td>Added in §4.4.</td>
+</tr>
+<tr>
+<td>Committed <code>standalone/glon.wasm</code> is stale</td>
+<td>Added in §4.1.</td>
+</tr>
+<tr>
+<td>Route delimiter check is in G1A, not the WASM export</td>
+<td>Corrected in §4.5.</td>
+</tr>
+<tr>
+<td><code>glon_event_value</code> truncates at embedded NUL</td>
+<td>Present in §4.5.</td>
+</tr>
+<tr>
+<td>Per-function return codes</td>
+<td>Present in §4.2.</td>
+</tr>
+<tr>
+<td>Appendix export sets and tested-host table</td>
+<td>Summarised; full original remains authoritative.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-contradictions">2.3 Contradictions</h3>
+<p>No substantive contradiction was found. Two earlier imprecisions were fixed:</p>
+<ol>
+<li><code>GLON-HOST-ABI.md</code> originally said the WASM host layer checks both token
+   length and delimiters. The original is precise: length is checked in the
+   host export; delimiters are checked in <code>r0_s1_g1a_route</code>/<code>_event</code> and mapped
+   to <code>-2</code>. Corrected in §4.5.</li>
+<li><code>GLON-HOST-ABI.md</code> originally did not mention that the committed
+   <code>standalone/glon.wasm</code> predates <code>glon_run</code>/<code>masm</code>. Added in §4.1 so an
+   implementer does not test a stale binary.</li>
+</ol>
+<p>The original document was not edited or replaced.</p>
+<hr>
+<h2 id="3-ebnf-production-verification">3. EBNF production verification</h2>
+<p>The reader is <code>r0_s1_runtime.c</code>: <code>parse_int</code>/<code>parse_word</code> at 177–216,
+<code>parse_string_literal</code> at 643–661, <code>parse_masm</code> at 686–760, <code>parse_block</code> at
+764–886, <code>parse_form</code> at 887–893, <code>parse_program</code> at 3963–4002.</p>
+<table>
+<thead>
+<tr>
+<th>EBNF production</th>
+<th>Implementation check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>source = ws* ( block trailing-tail | top-item ( ws* top-item )* ws* )</code></td>
+<td><code>parse_program</code>: skip ws; if <code>[</code> parse one block and return (trailing ignored); otherwise loop top-items to end.</td>
+<td><strong>Matches.</strong> Corrected the earlier grammar (it wrongly made <code>form</code> carry string/func/masm and required whitespace between forms).</td>
+</tr>
+<tr>
+<td><code>trailing-tail = any-byte*</code></td>
+<td><code>parse_program</code> returns immediately after <code>parse_block</code>; no trailing check.</td>
+<td><strong>Matches</strong> (<code>[1] 2</code> parses as <code>[1]</code>).</td>
+</tr>
+<tr>
+<td><code>top-item = string | masm-form | form</code></td>
+<td><code>parse_program</code> handles a leading <code>"</code> as string, exact <code>masm</code>/<code>raw</code> via <code>parse_masm</code>, otherwise <code>parse_form</code>. It does <strong>not</strong> special-case <code>func</code>.</td>
+<td><strong>Matches</strong>; top-level <code>func</code> is a WORD.</td>
+</tr>
+<tr>
+<td><code>block = "[" ( ws | block-item )* "]"</code></td>
+<td><code>parse_block</code>: <code>[</code>, loop ws/string/func/masm/form, <code>]</code>; unclosed or empty token is syntax error.</td>
+<td><strong>Matches.</strong></td>
+</tr>
+<tr>
+<td><code>block-item = string | func-form | masm-form | form</code></td>
+<td><code>parse_block</code> string branch at 776–782; func branch at 783–858; masm branch at 859–870; else <code>parse_form</code>.</td>
+<td><strong>Matches.</strong></td>
+</tr>
+<tr>
+<td><code>form = block | integer | word</code></td>
+<td><code>parse_form</code>: <code>[</code> → block; digit or <code>-</code>+digit → integer; else word. No string/func/masm.</td>
+<td><strong>Matches</strong>; important for spec/body position.</td>
+</tr>
+<tr>
+<td><code>func-form = "func" form block?</code></td>
+<td><code>parse_block</code> recognises exact token <code>func</code>, parses spec with <code>parse_form</code>, then if next nonws is <code>[</code> parses a literal body block under a fresh site/lexical scope; otherwise leaves the body in the stream.</td>
+<td><strong>Matches</strong>, with the note that this is block-only and body may be computed.</td>
+</tr>
+<tr>
+<td><code>masm-form = ( "masm" | "raw" ) ( ws+ digit+ )? ws* masm-block</code></td>
+<td><code>parse_masm</code>: optional non-negative integer only when the first nonws char is a digit; then requires <code>[</code>; tokenizes privately. Exact keyword detection occurs in both block/program loops.</td>
+<td><strong>Matches.</strong> Earlier grammar allowed a signed integer; actual arity is unsigned.</td>
+</tr>
+<tr>
+<td><code>masm-block = "[" masm-tokens "]"</code></td>
+<td>Private masm tokenizer; not Glon forms; limits 511 tokens / 64 labels / 128 refs.</td>
+<td><strong>Matches as an opaque terminal.</strong></td>
+</tr>
+<tr>
+<td><code>string = '"' non-quote-byte* '"'</code></td>
+<td><code>parse_string_literal</code>: reads to next <code>"</code>, no escapes, max 512; item-start only; expands to <code>mk-string [bytes]</code>.</td>
+<td><strong>Matches.</strong> Earlier grammar omitted item-start restriction and expansion.</td>
+</tr>
+<tr>
+<td><code>integer = [ "-" ] digit+</code></td>
+<td><code>parse_int</code>; called only when first char is digit or <code>-</code> followed by digit.</td>
+<td><strong>Matches.</strong></td>
+</tr>
+<tr>
+<td><code>word = token</code></td>
+<td><code>parse_word</code>: maximal run until ws/<code>[</code>/<code>]</code>; no other delimiters.</td>
+<td><strong>Matches.</strong></td>
+</tr>
+<tr>
+<td><code>token = token-byte+</code></td>
+<td><code>parse_word</code> returns token; reader truncates to 63 bytes before interning.</td>
+<td><strong>Matches</strong> with the truncation note; earlier grammar incorrectly said 1..63 (actual accepts longer and truncates).</td>
+</tr>
+<tr>
+<td><code>token-byte = ? any byte except whitespace, "[" or "]" ?</code></td>
+<td><code>parse_word</code> stops at whitespace, <code>[</code> and <code>]</code>; every other byte is part of the token.</td>
+<td><strong>Matches.</strong></td>
+</tr>
+<tr>
+<td><code>non-quote-byte = ? any byte except double quote ?</code></td>
+<td><code>parse_string_literal</code> reads until the next <code>"</code>.</td>
+<td><strong>Matches.</strong></td>
+</tr>
+<tr>
+<td><code>any-byte = ? any byte 0..255 ?</code></td>
+<td><code>parse_program</code> ignores all bytes after a leading block.</td>
+<td><strong>Matches.</strong></td>
+</tr>
+<tr>
+<td><code>word-value</code> first-match rules</td>
+<td><code>parse_word</code>: exact <code>none</code>; final <code>:</code>; leading <code>:</code>; leading <code>'</code>; else word.</td>
+<td><strong>Matches.</strong> The EBNF is ambiguous by itself because <code>token</code> contains <code>:</code>/<code>'</code>; the prose order is normative.</td>
+</tr>
+<tr>
+<td><code>digit = "0" | ... | "9"</code></td>
+<td><code>parse_int</code> consumes ASCII <code>0</code>–<code>9</code> only.</td>
+<td><strong>Matches.</strong></td>
+</tr>
+<tr>
+<td><code>ws</code></td>
+<td><code>skip_ws</code> uses C <code>isspace</code>: space, tab, LF, CR, VT, FF.</td>
+<td><strong>Matches.</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="31-corrections-made-during-this-pass">3.1 Corrections made during this pass</h3>
+<p>The EBNF in both the specification and syntax-diagram documents was corrected
+to the verified version above:</p>
+<ul>
+<li>separated <code>top-item</code> (no <code>func</code>) from <code>block-item</code> (includes <code>func</code>);</li>
+<li>separated <code>item</code> recognition from <code>parse_form</code>'s <code>form</code>;</li>
+<li>allowed zero-width separators where delimiters make the boundary
+  unambiguous;</li>
+<li>made <code>func</code>'s body block optional (computed body left in the stream);</li>
+<li>restricted masm arity to unsigned digits;</li>
+<li>made token length open-ended with a 63-byte truncation note;</li>
+<li>noted string item-start restriction, expansion and 512-byte limit;</li>
+<li>noted the leading-block trailing-tail behaviour;</li>
+<li>completed the terminal alphabets (<code>digit</code>, <code>any-byte</code>, <code>token-byte</code>,
+  <code>non-quote-byte</code>) and quoted the whitespace terminals so the grammar is
+  machine-readable.</li>
+</ul>
+<p>These are documentation corrections, not language changes.</p>
+<h3 id="32-observed-reader-boundary-cases">3.2 Observed reader boundary cases</h3>
+<p>Parsed with a temporary probe linking the current <code>r0_s1_runtime.c</code> (no
+repository change):</p>
+<table>
+<thead>
+<tr>
+<th>Source</th>
+<th>Parsed result</th>
+<th>Confirms</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>a[1]</code></td>
+<td><code>[W(a) [1]]</code></td>
+<td>zero-width separator before a delimiter</td>
+</tr>
+<tr>
+<td><code>1"x"</code></td>
+<td><code>[1 mk-string [120]]</code></td>
+<td>integer followed by a string with no whitespace</td>
+</tr>
+<tr>
+<td><code>a"b"</code></td>
+<td><code>[W(a"b")]</code></td>
+<td>quote inside a maximal word token</td>
+</tr>
+<tr>
+<td><code>[ func[x][y] ]</code></td>
+<td><code>[W(func) [W(x)] [W(y)]]</code></td>
+<td>func special case inside a block</td>
+</tr>
+<tr>
+<td><code>[ func "x" [1] ]</code></td>
+<td><code>[W(func) W("x") [1]]</code></td>
+<td>spec string is a word, not a literal</td>
+</tr>
+<tr>
+<td><code>func[x][y]</code> (unwrapped)</td>
+<td><code>[W(func) [x] [y]]</code></td>
+<td>top-level <code>func</code> is not special-cased</td>
+</tr>
+<tr>
+<td><code>[1] 2</code> (raw parse)</td>
+<td><code>[1]</code></td>
+<td>leading block ignores trailing forms</td>
+</tr>
+<tr>
+<td><code>masm1[]</code></td>
+<td><code>[W(masm1) []]</code></td>
+<td>keyword must be the whole token</td>
+</tr>
+<tr>
+<td><code>masm[ ]</code></td>
+<td>parse error</td>
+<td>empty masm block is invalid at validation</td>
+</tr>
+<tr>
+<td><code>masm 1[]</code></td>
+<td>parse error</td>
+<td>empty masm block is invalid at validation</td>
+</tr>
+<tr>
+<td><code>masm -1 []</code></td>
+<td>parse error (syntax)</td>
+<td>masm arity is unsigned</td>
+</tr>
+<tr>
+<td><code>-1</code></td>
+<td><code>[-1]</code></td>
+<td>negative integer</td>
+</tr>
+<tr>
+<td><code>-x</code></td>
+<td><code>[W(-x)]</code></td>
+<td><code>-</code> not followed by a digit is a word</td>
+</tr>
+<tr>
+<td><code>]</code> (top level)</td>
+<td>parse error (syntax)</td>
+<td>empty token is malformed source</td>
+</tr>
+</tbody>
+</table>
+<p><code>mk-string</code> in the table is the expansion the reader emits for a string
+literal, not a source word.</p>
+<hr>
+<h2 id="4-mermaid-diagram-verification">4. Mermaid diagram verification</h2>
+<p>The diagrams in <code>GLON-SYNTAX-DIAGRAMS.md</code> are control-flow renderings of the
+verified EBNF, not a second formal grammar. The new §13 map states the
+correspondence:</p>
+<table>
+<thead>
+<tr>
+<th>Diagram</th>
+<th>EBNF</th>
+<th>Verified?</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>§1 Source envelope</td>
+<td><code>source</code>, <code>trailing-tail</code></td>
+<td>Yes; shows leading block/trailing ignored and top-item loop.</td>
+</tr>
+<tr>
+<td>§2 Item alternatives</td>
+<td><code>top-item</code>, <code>block-item</code></td>
+<td>Yes; now notes top-level omits <code>func</code>.</td>
+</tr>
+<tr>
+<td>§2 Form alternatives</td>
+<td><code>form</code></td>
+<td>Yes; now excludes string/func/masm.</td>
+</tr>
+<tr>
+<td>§3 Block</td>
+<td><code>block</code>, <code>block-item</code></td>
+<td>Yes; string costs two forms, 512 limit.</td>
+</tr>
+<tr>
+<td>§4 Word forms</td>
+<td><code>word</code>, <code>token</code>, <code>word-value</code></td>
+<td>Yes; added 63-byte truncation before rules.</td>
+</tr>
+<tr>
+<td>§5 Integer</td>
+<td><code>integer</code></td>
+<td>Yes.</td>
+</tr>
+<tr>
+<td>§6 String</td>
+<td><code>string</code></td>
+<td>Yes; item-start, no escapes, 512, expansion.</td>
+</tr>
+<tr>
+<td>§7 Func</td>
+<td><code>func-form</code></td>
+<td>Yes; now labelled block-only; computed body left.</td>
+</tr>
+<tr>
+<td>§8 Masm</td>
+<td><code>masm-form</code></td>
+<td>Yes; exact keyword, unsigned arity.</td>
+</tr>
+<tr>
+<td>§9 Grouping</td>
+<td>none</td>
+<td>Correctly labelled as evaluation, not syntax.</td>
+</tr>
+</tbody>
+</table>
+<p>Remaining limitation: Mermaid cannot express maximal-munch tokenization or
+the 512-form counter. The prose and EBNF carry those constraints.</p>
+<hr>
+<h2 id="5-vocabulary-provenance-verification">5. Vocabulary provenance verification</h2>
+<p><code>GLON-LANGUAGE-SPEC.md</code> §4.0 now classifies every documented vocabulary group:</p>
+<ul>
+<li><strong>Frozen S1 instruction set:</strong> <code>LIT DUP DROP @ ! 0BRANCH HOST</code> — reachable
+  only through <code>masm</code>/<code>raw</code>, never ordinary Glon words.</li>
+<li><strong>R0 natives over S1 <code>HOST</code>:</strong> arithmetic, comparison, <code>print</code>.</li>
+<li><strong>R0 evaluator mechanics:</strong> <code>values</code>, <code>either</code>, <code>do</code>, <code>invoke</code>, <code>reduce</code>,
+  SIN! words, <code>func</code>, <code>return</code>.</li>
+<li><strong>Reader trapdoor:</strong> <code>masm</code>/<code>raw</code>.</li>
+<li><strong>Glon libraries:</strong> prelude/common, <code>case</code>, <code>parse</code>, strings, tasks.</li>
+<li><strong>Host imports/exports and dispatch convention:</strong> <code>host_*</code>, <code>glon_*</code>,
+  <code>current-*</code>.</li>
+</ul>
+<p><code>GLON-HOST-ABI.md</code> §1 independently repeats the portable-vs-host split. No
+vocabulary entry now stands unclassified.</p>
+<p>One nuance to preserve: arithmetic and comparisons are ordinary Glon native
+words even though their implementation calls frozen S1 <code>HOST</code> operations. They
+are not S1 primitives and are not library code.</p>
+<hr>
+<h2 id="6-independent-implementer-reading-guide">6. Independent-implementer reading guide</h2>
+<p>See <code>GLON-IMPLEMENTER-GUIDE.md</code>. Minimum set:</p>
+<ol>
+<li><code>GLON-ALPHA-LAWS.md</code> — normative semantics.</li>
+<li><code>GLON-LANGUAGE-SPEC.md</code> — complete descriptive surface and vocabulary.</li>
+<li><code>GLON-SYNTAX-DIAGRAMS.md</code> — verified lexical grammar.</li>
+<li><code>GLON-EVALUATION-MODEL.md</code> — execution, binding, result sets, errors.</li>
+<li><code>GLON-HOST-ABI.md</code> + <code>GLON-WASM-ABI.md</code> — host boundary.</li>
+<li><code>GLON-ARCHITECTURE-MEMORY.md</code> — decisions and limits.</li>
+<li>The named conformance tests for the behaviour being implemented.</li>
+</ol>
+<p>The C source is needed only for unresolved details such as <code>masm</code> mnemonics,
+exact GC layout or host-specific pointer formats. It is not needed for ordinary
+Glon programs.</p>
+<hr>
+<h2 id="7-remaining-ambiguity-and-missing-conformance-tests">7. Remaining ambiguity and missing conformance tests</h2>
+<h3 id="71-ambiguity-unresolved-behaviour">7.1 Ambiguity / unresolved behaviour</h3>
+<ol>
+<li><strong>Non-integer arithmetic and <code>print</code>.</strong> Contract says integers; runtime
+   computes on <code>payload / 16</code> without a type check.</li>
+<li><strong>Division/modulo by zero.</strong> C undefined behaviour versus WASM trap; no
+   contract.</li>
+<li><strong>Non-block <code>do</code>/<code>either</code>.</strong> Used as a block address; may read unrelated
+   memory or return nonsense.</li>
+<li><strong>Missing/extra call arguments.</strong> Missing args read past the block; extra
+   args remain for the following expression.</li>
+<li><strong><code>func</code> spec shape.</strong> A non-block spec, duplicate parameters, or more than
+   16 parameters are not validated before use.</li>
+<li><strong><code>return</code> with no expression / at end of block.</strong> The reader consumes the
+   next form, which may be past the end.</li>
+<li><strong><code>values</code> exactly-one-result rule.</strong> Implementation fail-stops on zero or
+   multiple results per form; laws/primer do not state it.</li>
+<li><strong>Result-set collapse.</strong> Arguments and <code>reduce</code> keep the first of several
+   results; undocumented.</li>
+<li><strong>String literal library dependency.</strong> <code>"..."</code> expands to <code>mk-string [...]</code>;
+   a bare core runtime halts.</li>
+<li><strong>Host comment stripping.</strong> <code>;;</code> is not parser syntax and is stripped even
+    inside strings.</li>
+<li><strong>Token truncation at 63 bytes</strong> and silent symbol collision.</li>
+<li><strong>Leading block ignores trailing source forms.</strong></li>
+<li><strong><code>reduce</code> rejects managed source blocks.</strong></li>
+<li><strong><code>none</code> literal versus <code>none:</code>/<code>'none</code>.</strong></li>
+<li><strong><code>masm</code> empty-block validation</strong> fails after parsing, not as a lexical
+    rule.</li>
+</ol>
+<h3 id="72-missing-conformance-tests-prioritised">7.2 Missing conformance tests (prioritised)</h3>
+<ol>
+<li>Argument collapse: <code>+ values [1 2] 3</code>, <code>print values [1 2]</code>,
+   <code>reduce [values [1 2] 3]</code>.</li>
+<li><code>values</code> zero/multi-result forms and nested <code>values</code>.</li>
+<li>Non-block <code>do</code>/<code>either</code>, and missing/extra function arguments.</li>
+<li><code>func</code> non-block spec, duplicate parameters, 17+ parameters.</li>
+<li><code>return</code> outside a function and <code>return</code> at end of block.</li>
+<li>String with <code>;;</code> inside, unterminated string, backslash/quote handling.</li>
+<li>64+ byte token and two tokens sharing a 63-byte prefix.</li>
+<li><code>none: 5 none</code> and <code>'none</code> equality/molding.</li>
+<li><code>reduce reduce [1]</code> (managed source).</li>
+<li>Non-integer operands for each arithmetic/comparison word.</li>
+<li>Division and modulo by zero on native and WASM.</li>
+<li>Source starting with a block followed by more forms.</li>
+<li><code>print</code> of NONE, word, block, string and closure.</li>
+<li><code>func</code> at unwrapped top level versus inside a block (site/scope).</li>
+<li><code>func "x" [1]</code> inside a block (spec is a word, not a string).</li>
+<li><code>masm[ ]</code>, <code>masm 1[]</code>, <code>masm1[]</code>, and <code>masm -1 []</code> lexical cases.</li>
+<li>Form adjacency: <code>a[1]</code>, <code>1"x"</code>, <code>a"b"</code>.</li>
+<li>Host comment stripping through each host path (native session, WASM
+    <code>glon_load</code>, <code>glon_run</code>, CLI).</li>
+</ol>
+<p>The current suite already covers the main language laws, closures, case,
+parse, strings, SIN!, escape law, memory/GC, tasks and primitive models; these
+gaps are concentrated at lexical boundaries, result-set collapse and unchecked
+non-block/argument cases.</p>
+</main>
+<footer>Generated from the pinned upstream Markdown at <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code>. The original Markdown is preserved under <a href="../source/">source/</a>.</footer>
+
+</body>
+</html>

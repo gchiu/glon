@@ -1,0 +1,856 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WASM ABI</title>
+<style>
+:root { --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+        --accent:#2456a6; --code:#20262e; --ok:#1b6b42; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --code:#242a32; --ok:#7ad6a2; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:1040px; padding:0 16px 4rem; color:var(--fg); background:var(--bg);
+       font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3,h4 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .4rem; }
+h2 { font-size:clamp(1.25rem,3vw,1.55rem); margin:2.2rem 0 .6rem; }
+h3 { font-size:1.1rem; margin:1.6rem 0 .4rem; }
+p { margin:.55rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:inherit; overflow-wrap:normal; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.75rem 0; border-bottom:1px solid var(--line); margin-bottom:1.4rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover, .navlinks a:focus-visible { color:var(--accent); text-decoration:underline; }
+.pagelead { display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; margin:0 0 1rem;
+            font-size:.86rem; color:var(--muted); }
+.pagelead a { font-weight:600; }
+table { border-collapse:collapse; width:100%; margin:.8rem 0 1.2rem; font-size:.92rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .55rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+blockquote { border-left:3px solid var(--line); margin:1rem 0; padding:.5rem 1rem; color:var(--muted); background:var(--panel); }
+ul,ol { padding-left:1.4rem; }
+li { margin:.2rem 0; }
+.mermaid { overflow-x:auto; text-align:center; margin:1.2rem 0; }
+.mermaid svg { max-width:100%; height:auto; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; margin:1rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card h3 { margin:.1rem 0 .35rem; }
+.card p:last-child { margin-bottom:0; }
+.source-list { font-size:.9rem; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem; }
+@media (max-width:560px) {
+  body { padding:0 14px 3rem; }
+  .topnav { align-items:flex-start; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Site navigation">
+  <a class="brand" href="../">Glon</a>
+  <div class="navlinks">
+    <a href="../">Home</a>
+    <a href="index.html">Language</a>
+    <a href="../grammar/">Grammar</a>
+    <a href="../#challenges">Challenges</a>
+  </div>
+</nav>
+<main>
+<div class="pagelead"><a href="../source/GLON-WASM-ABI.md">View Markdown source</a> <span>Upstream commit <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></span></div>
+<h1 id="glon-wasm-abi">Glon WASM ABI</h1>
+<p><strong>Status:</strong> current / provisional. This documents what the code in this
+repository does today. It is not a frozen specification and there is no ABI
+version number or compatibility guarantee (see §11).</p>
+<p>This document is derived from <code>standalone/glon.c</code> (the host/portability layer),
+the G1A layers (<code>r0_s1_g1a.c</code>, <code>r0_s1_g1a_live.c</code>), the WASM build rules in the
+<code>Makefile</code>, the browser hosts (<code>demo/shop/host.js</code>, <code>demos/patrol/patrol-host.js</code>,
+<code>demos/kaka/kaka-host.js</code>, <code>standalone/glon.js</code>), and the WASM regression tests
+listed in §12. The exported-symbol lists were read from the actual built <code>.wasm</code>
+modules (<code>demo/shop/glon.wasm</code>, <code>demo/shop/glon-live.wasm</code>,
+<code>standalone/glon.wasm</code>).</p>
+<hr>
+<h2 id="1-scope">1. Scope</h2>
+<p>This is the <strong>binary interface between a host program and the Glon WASM
+runtime</strong>. It describes how a host instantiates the module, moves bytes in and
+out, and reads results.</p>
+<p>It is <strong>not</strong>:</p>
+<ul>
+<li>the Glon/R0/S1 language specification (that is <code>GLON-PRIMER.md</code>,
+  <code>R0-ARCHITECTURE.md</code>, <code>GLON-ALPHA-LAWS.md</code>);</li>
+<li>the native host capability protocol (<code>GLON-HOST-CAPABILITIES.md</code>,
+  <code>GLON-DESKTOP-D6.md</code>) — that is the control/data plane between two native
+  processes, not this WASM boundary;</li>
+<li>the Canvas/View rendering protocol — <code>host_canvas_script</code> and <code>host_set_html</code>
+  are host imports used by the browser hosts to present Glon output, but the
+  drawing command vocabulary is a presentation concern, not part of the core
+  Glon ABI. It is mentioned only where a host must implement the import;</li>
+<li>a stable, versioned public API.</li>
+</ul>
+<p>The ABI is deliberately small. JavaScript hosts in this repository contain no
+application state or routing logic; they only move bytes and perform browser
+operations (see <code>GLON-SHOP-G1A.md</code> §6).</p>
+<hr>
+<h2 id="2-exported-functions">2. Exported functions</h2>
+<h3 id="21-module-variants">2.1 Module variants</h3>
+<p>The source defines one host layer (<code>standalone/glon.c</code>) that is compiled into
+three module shapes:</p>
+<table>
+<thead>
+<tr>
+<th>module</th>
+<th>build</th>
+<th>host imports</th>
+<th>extra exports</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>G1A / shop</strong> (canonical browser build)</td>
+<td><code>demo/shop/glon.wasm</code></td>
+<td><code>host_print</code>, <code>host_set_text</code>, <code>host_set_html</code>, <code>host_canvas_script</code></td>
+<td><code>glon_route</code>, <code>glon_event</code>, <code>glon_event_value</code></td>
+</tr>
+<tr>
+<td><strong>GLON_LIVE</strong> (experimental)</td>
+<td><code>demo/shop/glon-live.wasm</code> (<code>-DGLON_LIVE</code>)</td>
+<td>the four above <strong>+ <code>host_call</code></strong></td>
+<td>the three above <strong>+ <code>glon_event_bytes</code></strong></td>
+</tr>
+<tr>
+<td><strong>W2 standalone</strong></td>
+<td><code>standalone/glon.wasm</code></td>
+<td><code>host_print</code>, <code>host_set_text</code></td>
+<td>none beyond the common set</td>
+</tr>
+</tbody>
+</table>
+<p>All three share the common exports: <code>glon_alloc</code>, <code>glon_init</code>, <code>glon_load</code>,
+<code>glon_call</code>, <code>glon_run</code>, <code>glon_result_ptr</code>, <code>glon_result_len</code>, <code>memory</code>, plus
+Emscripten CRT artifacts (<code>emscripten_stack_get_current</code>,
+<code>_emscripten_stack_restore</code>, <code>__indirect_function_table</code>). The two
+<code>emscripten_stack_*</code> functions are inert no-ops; no host calls them.</p>
+<blockquote>
+<p><strong>Build-artifact note.</strong> The committed <code>standalone/glon.wasm</code> is an old binary
+from the original W2 commit and predates <code>glon_run</code>/<code>glon_result_*</code> and the
+<code>masm</code> rename. <code>make wasm-standalone</code>/<code>wasm-standalone-test</code> rebuild it from
+current sources before running. The authoritative ABI is the source
+(<code>standalone/glon.c</code>) and the G1A/GLON_LIVE modules, not that stale file.
+See the report accompanying this document.</p>
+</blockquote>
+<h3 id="22-raw-webassembly-signatures">2.2 Raw WebAssembly signatures</h3>
+<p>On wasm32, <code>int</code> and pointers are <code>i32</code>; every function returns <code>i32</code>. All
+pointers are byte offsets into the module's exported linear memory. A pointer is
+only meaningful to the instance that produced it.</p>
+<table>
+<thead>
+<tr>
+<th>export</th>
+<th>wasm signature</th>
+<th>availability</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>glon_alloc</code></td>
+<td><code>(i32 len) -&gt; i32 ptr</code></td>
+<td>all</td>
+</tr>
+<tr>
+<td><code>glon_init</code></td>
+<td><code>() -&gt; i32</code></td>
+<td>all</td>
+</tr>
+<tr>
+<td><code>glon_load</code></td>
+<td><code>(i32 src, i32 len) -&gt; i32</code></td>
+<td>all</td>
+</tr>
+<tr>
+<td><code>glon_call</code></td>
+<td><code>(i32 name, i32 len) -&gt; i32</code></td>
+<td>all</td>
+</tr>
+<tr>
+<td><code>glon_route</code></td>
+<td><code>(i32 token, i32 len) -&gt; i32</code></td>
+<td>G1A, GLON_LIVE</td>
+</tr>
+<tr>
+<td><code>glon_event</code></td>
+<td><code>(i32 token, i32 len) -&gt; i32</code></td>
+<td>G1A, GLON_LIVE</td>
+</tr>
+<tr>
+<td><code>glon_event_value</code></td>
+<td><code>(i32 token, i32 tlen, i32 value, i32 vlen) -&gt; i32</code></td>
+<td>G1A, GLON_LIVE</td>
+</tr>
+<tr>
+<td><code>glon_event_bytes</code></td>
+<td><code>(i32 token, i32 tlen, i32 data, i32 dlen) -&gt; i32</code></td>
+<td>GLON_LIVE only</td>
+</tr>
+<tr>
+<td><code>glon_run</code></td>
+<td><code>(i32 src, i32 len) -&gt; i32</code></td>
+<td>all</td>
+</tr>
+<tr>
+<td><code>glon_result_ptr</code></td>
+<td><code>() -&gt; i32 ptr</code></td>
+<td>all</td>
+</tr>
+<tr>
+<td><code>glon_result_len</code></td>
+<td><code>() -&gt; i32</code></td>
+<td>all</td>
+</tr>
+</tbody>
+</table>
+<h3 id="23-host-imports-must-be-supplied-or-instantiation-fails">2.3 Host imports (must be supplied or instantiation fails)</h3>
+<table>
+<thead>
+<tr>
+<th>import</th>
+<th>signature</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>env.host_print</code></td>
+<td><code>(i32 ptr, i32 len) -&gt; ()</code></td>
+<td>runtime plain-text/log output</td>
+</tr>
+<tr>
+<td><code>env.host_set_text</code></td>
+<td><code>(i32 handle, i32 value) -&gt; ()</code></td>
+<td>write a number into a <code>[data-glon-id]</code> element (W2 protocol)</td>
+</tr>
+<tr>
+<td><code>env.host_set_html</code></td>
+<td><code>(i32 handle, i32 ptr, i32 len) -&gt; ()</code></td>
+<td>write rendered HTML into a <code>[data-glon-id]</code> element</td>
+</tr>
+<tr>
+<td><code>env.host_canvas_script</code></td>
+<td><code>(i32 ptr, i32 len) -&gt; ()</code></td>
+<td>hand the host a generic visual script to draw</td>
+</tr>
+<tr>
+<td><code>env.host_call</code></td>
+<td><code>(i32 op, i32 op_len, i32 arg, i32 arg_len) -&gt; ()</code></td>
+<td>GLON_LIVE outbound capability request</td>
+</tr>
+</tbody>
+</table>
+<p>The host must satisfy the exact import set the module declares. The G1A build
+does not import <code>host_call</code>; the GLON_LIVE build does. <code>host_canvas_script</code> is
+called after every <code>glon_route</code>/<code>glon_event</code>/<code>glon_event_value</code>/
+<code>glon_event_bytes</code> dispatch, possibly with <code>len == 0</code>.</p>
+<h3 id="24-per-function-semantics">2.4 Per-function semantics</h3>
+<p>The <code>handle</code> argument of <code>host_set_html</code> is currently hard-coded to <code>1</code>
+(<code>standalone/glon.c</code>, <code>G1A_WRITE_HTML</code>). The runtime therefore writes rendered
+output to the element with <code>data-glon-id="1"</code>. This is an implementation detail
+of the current host layer, not a parameter the caller controls.</p>
+<h4 id="glon_alloclen-ptr"><code>glon_alloc(len) -&gt; ptr</code></h4>
+<ul>
+<li>Allocates <code>len</code> bytes (plus one reserved byte) from the <strong>transient ABI arena</strong>
+  (see §3) and returns an 8-byte-aligned pointer.</li>
+<li>Returns <code>0</code> if the arena cannot satisfy the request. <code>0</code> is the only failure
+  signal.</li>
+<li><strong>Does not</strong> clear or NUL-fill the buffer. The caller writes the bytes, then
+  passes <code>ptr, len</code> to an execution entry.</li>
+<li>Allocation is transient: the pointer is only valid until the next execution
+  entry (§3, §10).</li>
+<li>Multiple <code>glon_alloc</code> calls made before a single execution entry accumulate
+  and must all remain live simultaneously (e.g. token + value for
+  <code>glon_event_value</code>). Align each result independently.</li>
+</ul>
+<h4 id="glon_init-0"><code>glon_init() -&gt; 0</code></h4>
+<ul>
+<li>Initialises the runtime once: runs <code>r0_s1_init()</code>, seeds the M1 multitasking
+  environment cells, and (GLON_LIVE) registers the outbound host-call callback.</li>
+<li>Idempotent: guarded by an internal <code>inited</code> flag; repeat calls are no-ops.</li>
+<li>Always returns <code>0</code>.</li>
+<li><strong>Not</strong> an execution entry: it does not reset the transient ABI arena.</li>
+<li>Must be called before <code>glon_load</code>/<code>glon_call</code>/route/event/run.</li>
+</ul>
+<h4 id="glon_loadsrc-len-0-1-2-3"><code>glon_load(src, len) -&gt; 0 | -1 | -2 | -3</code></h4>
+<ul>
+<li>Copies <code>len</code> bytes from <code>src</code> into a 16 KiB static source buffer, strips <code>;;</code>
+  line comments, parses with <code>r0_s1_parse</code>, and runs the parsed block with the
+  <strong>persistent</strong> entry <code>r0_s1_run_persistent</code>.</li>
+<li>May be called repeatedly to <strong>extend</strong> an already-initialised machine
+  (bootstrap, then libraries, then an app). It does not reset the machine.</li>
+<li><code>-1</code>: <code>len &gt;= 16384</code> (source does not fit).</li>
+<li><code>-2</code>: parse error.</li>
+<li><code>-3</code>: <code>r0_s1_run_persistent</code> returned a negative result (machine-level
+  failure).</li>
+<li><code>0</code>: success.</li>
+<li><strong>Execution entry.</strong> The <code>src</code> pointer is consumed during the call only.</li>
+</ul>
+<h4 id="glon_callname-len-0-1-2-3"><code>glon_call(name, len) -&gt; 0 | -1 | -2 | -3</code></h4>
+<ul>
+<li>Builds the source <code>[ do NAME ]</code>, parses it, and runs it with the transient
+  entry <code>r0_s1_run</code> (this is the W2 counter-demo path).</li>
+<li><code>-1</code>: <code>len == 0</code> or <code>len &gt; 60</code>.</li>
+<li><code>-2</code>: parse error. <code>-3</code>: run returned a negative result. <code>0</code>: success.</li>
+<li><strong>Execution entry.</strong> <code>name</code> must be a plain word (it is interpolated directly
+  into source).</li>
+</ul>
+<h4 id="glon_routetoken-len-0-1-2"><code>glon_route(token, len) -&gt; 0 | -1 | -2</code></h4>
+<ul>
+<li>Binds <code>current-route</code> to the token word, runs the loaded program's <code>route</code>
+  block persistently, renders the selected fragment, and emits it via
+  <code>host_set_html(1, ...)</code>, then <code>host_canvas_script(...)</code>.</li>
+<li><code>-1</code>: <code>len == 0</code> or <code>len &gt; 63</code>.</li>
+<li><code>-2</code>: dispatch failure — which includes a token containing a Glon delimiter
+  (<code>[ ] ' :</code> space/tab/CR/LF), no fragment produced, or a parse/run error. (The
+  host-layer length check returns <code>-1</code>; the delimiter check happens inside
+  <code>r0_s1_g1a_route</code>, whose <code>-1</code> is mapped to <code>-2</code> by <code>glon_route</code>.)</li>
+<li><code>0</code>: success. Rendered HTML is a side effect, not a return value.</li>
+<li><strong>Execution entry.</strong></li>
+</ul>
+<h4 id="glon_eventtoken-len-0-1-2"><code>glon_event(token, len) -&gt; 0 | -1 | -2</code></h4>
+<ul>
+<li>Binds <code>current-event</code> <strong>only</strong> (no <code>current-value</code>) and runs the program's
+  <code>do-event</code> block persistently, then renders and emits as above.</li>
+<li>Same length/content limits and codes as <code>glon_route</code>.</li>
+<li><strong>Execution entry.</strong></li>
+</ul>
+<h4 id="glon_event_valuetoken-tlen-value-vlen-0-1-2"><code>glon_event_value(token, tlen, value, vlen) -&gt; 0 | -1 | -2</code></h4>
+<ul>
+<li>Binds <code>current-event</code> to the token and <code>current-value</code> to a managed <code>STRING!</code>
+  built from the <code>value</code> bytes (via the loaded program's <code>mk-string</code>), then runs
+  <code>do-event</code> and renders.</li>
+<li><code>-1</code>: <code>tlen == 0</code>, <code>tlen &gt; 63</code>, or <code>vlen &gt; 200</code>.</li>
+<li><code>-2</code>: dispatch failure (including a delimiter in the token). <code>0</code>: success.</li>
+<li><code>value</code> is treated as a NUL-terminated byte string by the implementation (it
+  is expanded byte-by-byte into source); embedded NUL is not representable on
+  this path.</li>
+<li><strong>Execution entry.</strong></li>
+</ul>
+<h4 id="glon_event_bytestoken-tlen-data-dlen-0-1-2-glon_live"><code>glon_event_bytes(token, tlen, data, dlen) -&gt; 0 | -1 | -2</code> (GLON_LIVE)</h4>
+<ul>
+<li>Same as <code>glon_event_value</code>, but <code>data</code> is copied <strong>by length</strong>, so it may
+  contain NUL and arbitrary bytes; there is no 200-byte cap.</li>
+<li><code>-1</code>: <code>tlen == 0</code> or <code>tlen &gt; 63</code>. <code>-2</code>: dispatch failure, which includes
+  <code>dlen &gt; 12000</code> (<code>LIVE_MAX_BYTES</code>); <code>0</code>: success.</li>
+<li><strong>Execution entry.</strong></li>
+</ul>
+<h4 id="glon_runsrc-len-0-1"><code>glon_run(src, len) -&gt; 0 | -1</code></h4>
+<ul>
+<li>Runs one program <strong>without</strong> the outer brackets (source is wrapped by
+  <code>r0_s1_show_run</code>), formats the outcome as text into a static 4 KiB result
+  buffer, and records its length.</li>
+<li><code>-1</code>: <code>len &gt;= 16384</code>.</li>
+<li><code>0</code>: the outcome text is set in <strong>every</strong> case (clean results, <code>** uncaught
+  #[SIN! ...]</code>, <code>** halted...</code>, <code>** parse error</code>). There is no separate error
+  code; inspect the text via <code>glon_result_ptr</code>/<code>glon_result_len</code>.</li>
+<li><strong>Execution entry.</strong> It resets the ABI arena before validating <code>len</code>, so even
+  a failed <code>glon_run</code> invalidates transient ABI pointers.</li>
+</ul>
+<h4 id="glon_result_ptr-ptr"><code>glon_result_ptr() -&gt; ptr</code></h4>
+<ul>
+<li>Returns the byte address of the static result buffer written by the last
+  <code>glon_run</code>. Stable across calls; never <code>0</code>.</li>
+<li>The buffer is <strong>not</strong> in the transient ABI arena.</li>
+</ul>
+<h4 id="glon_result_len-len"><code>glon_result_len() -&gt; len</code></h4>
+<ul>
+<li>Returns the byte length recorded by the last <code>glon_run</code>. <code>0</code> before any
+  <code>glon_run</code>.</li>
+<li>The length may be capped by the 4 KiB result buffer.</li>
+</ul>
+<hr>
+<h2 id="3-wasm-memory-model">3. WASM memory model</h2>
+<ul>
+<li>The module exports one <code>memory</code> (linear memory), built with
+  <code>ALLOW_MEMORY_GROWTH=1</code> (<code>STANDALONE_FLAGS</code> in the <code>Makefile</code>). Memory may
+  grow during a call. Hosts must therefore <strong>re-create any <code>Uint8Array</code>/
+  <code>DataView</code> view after a call</strong>; a view taken before a growth is detached. The
+  browser hosts do exactly this (a fresh <code>view()</code> on each access).</li>
+<li>The Glon machine state lives in a static <code>cell M[65536]</code> array (in linear
+  memory) plus a loader heap inside it. This is <strong>persistent</strong> for the life of
+  the instance.</li>
+<li><code>malloc</code>/<code>free</code> are a trivial bump allocator over a static <code>heap[65536]</code>
+  that never reclaims; it backs interned symbol spellings for the life of the
+  machine. <strong>Callers cannot call <code>malloc</code></strong>; it is not exported.</li>
+</ul>
+<h3 id="31-the-transient-abi-arena">3.1 The transient ABI arena</h3>
+<ul>
+<li><code>glon_alloc</code> allocates from a dedicated static <code>abi_heap[65536]</code> bump arena
+  (<code>standalone/glon.c</code>), <strong>separate</strong> from the persistent <code>heap</code>.</li>
+<li>Alignment: 8 bytes. <code>abi_used</code> is rounded up to 8; <code>len + 1</code> bytes are
+  reserved (the <code>+1</code> is reserved, not necessarily zeroed).</li>
+<li>Allocation succeeds iff <code>align8(abi_used) + len + 1 &lt;= 65536</code>; otherwise
+  <code>glon_alloc</code> returns <code>0</code>. There is no exported way to query remaining space.</li>
+<li>The arena is reset to empty at the start of each execution entry
+  (<code>abi_reset()</code>). Several allocations may be live at once.</li>
+</ul>
+<h3 id="32-the-d116-lifetime-rule">3.2 The D11.6 lifetime rule</h3>
+<blockquote>
+<p><strong>A pointer returned by <code>glon_alloc</code> for transient host→WASM ABI storage
+remains valid only until the next Glon execution entry.</strong></p>
+</blockquote>
+<p>An execution entry resets the arena (its bump pointer). The entry copies the
+host buffers it was passed into local storage at its start, before any further
+allocation, so the caller's bytes are consumed during that call. After the call
+returns, the same address may be handed out again by a later <code>glon_alloc</code>, and
+its contents may be overwritten.</p>
+<p>The functions that are <strong>execution entries</strong> (and therefore invalidate all
+outstanding <code>glon_alloc</code> pointers) are:</p>
+<ul>
+<li><code>glon_load</code></li>
+<li><code>glon_call</code></li>
+<li><code>glon_route</code></li>
+<li><code>glon_event</code></li>
+<li><code>glon_event_value</code></li>
+<li><code>glon_event_bytes</code> (GLON_LIVE)</li>
+<li><code>glon_run</code></li>
+</ul>
+<p><code>glon_init</code>, <code>glon_alloc</code>, <code>glon_result_ptr</code>, and <code>glon_result_len</code> are <strong>not</strong>
+execution entries and do not reset the arena.</p>
+<p>The reset happens at the start of the entry, before argument validation, so even
+a call that ultimately returns an error invalidates outstanding ABI pointers.</p>
+<p>Callers must not retain an ABI pointer across any of the listed calls. If bytes
+must survive, copy them into host memory before the next execution entry.</p>
+<h3 id="33-writing-into-returned-memory">3.3 Writing into returned memory</h3>
+<p>Callers <strong>may and should</strong> write directly into the memory returned by
+<code>glon_alloc</code>, then pass <code>ptr, len</code> to an execution entry. No host-side
+"commit"/"free" call exists.</p>
+<hr>
+<h2 id="4-result-lifetime">4. Result lifetime</h2>
+<ul>
+<li><code>glon_result_ptr</code>/<code>glon_result_len</code> expose the static <code>resultbuf</code> written by
+  <code>glon_run</code>. They are set <strong>only</strong> by <code>glon_run</code>; no other export writes them.</li>
+<li>The result memory is a static buffer outside the transient ABI arena, so it is
+  <strong>not</strong> invalidated by <code>glon_route</code>/<code>glon_event</code>/<code>glon_load</code>/etc.</li>
+<li>It <strong>is</strong> replaced by the next <code>glon_run</code> (which sets <code>resultlen = 0</code>, then
+  rewrites the buffer). A host that needs the text across another <code>glon_run</code>
+  must copy it.</li>
+<li>The result buffer does not alias the ABI input arena, <code>htmlbuf</code>, or <code>visbuf</code>.</li>
+<li><code>glon_route</code>/<code>glon_event</code>/<code>glon_event_value</code>/<code>glon_event_bytes</code> do <strong>not</strong>
+  populate the result buffer; their output is delivered through host imports
+  (<code>host_set_html</code>, <code>host_canvas_script</code>). Those import buffers (<code>htmlbuf</code>,
+  <code>visbuf</code>) are static and are overwritten by the next dispatch; the host should
+  copy during the import callback.</li>
+</ul>
+<hr>
+<h2 id="5-strings-and-byte-sequences">5. Strings and byte sequences</h2>
+<ul>
+<li><strong>Encoding.</strong> The ABI is byte-oriented: every input and output is a
+  <code>(pointer, length)</code> pair of bytes. The runtime does <strong>not</strong> validate or
+  guarantee UTF-8. The browser hosts decode with <code>TextDecoder</code> (UTF-8) for
+  display, but that is a host choice, not an ABI guarantee.</li>
+<li><strong>Termination.</strong> No NUL terminator is required or promised. Hosts must use the
+  explicit length. Internally, source/token/value C strings are NUL-terminated
+  after copying, which is why embedded NUL is significant on textual paths.</li>
+<li><strong>Embedded NUL.</strong></li>
+<li><code>glon_load</code>/<code>glon_run</code> source is parsed as a C string: an embedded NUL ends
+    the parsed text.</li>
+<li><code>glon_event_value</code> treats <code>value</code> as a C string: an embedded NUL truncates.</li>
+<li><code>glon_event_bytes</code> (GLON_LIVE) copies <code>dlen</code> bytes: embedded NUL and
+    arbitrary bytes are preserved.</li>
+<li><strong>Tokens.</strong> A token is a single Glon word. It must be non-empty and must not
+  contain <code>[</code>, <code>]</code>, <code>'</code>, <code>:</code>, space, tab, CR, or LF. Token limits:
+  <code>glon_call</code> ≤ 60 bytes; <code>glon_route</code>/<code>glon_event</code>/<code>glon_event_value</code>/
+  <code>glon_event_bytes</code> ≤ 63 bytes. Tokens are bound as lit-words
+  (<code>current-route: 'token</code>, <code>current-event: 'token</code>).</li>
+<li><strong>Event value (<code>glon_event_value</code>).</strong> Bound as a managed <code>STRING!</code> built via
+  the loaded program's <code>mk-string</code>; max 200 bytes (a smaller practical limit
+  than <code>glon_event_bytes</code>).</li>
+<li><strong>Event bytes (<code>glon_event_bytes</code>, GLON_LIVE).</strong> Raw bytes bound as a managed
+  <code>STRING!</code>; max 12000 bytes (<code>LIVE_MAX_BYTES</code>). The implementation builds the
+  string in 400-byte chunks and caps the generated source at 64 KiB.</li>
+<li><strong>Output.</strong> <code>host_print</code>, <code>host_set_html</code>, and <code>host_canvas_script</code> receive
+  <code>(ptr, len)</code>; <code>host_set_text</code> receives two integers (<code>handle</code>, <code>value</code>).
+  Rendered HTML is <code>NUL</code>-terminated when there is room, but hosts read by
+  length. Output buffers are silently capped: rendered HTML <code>htmlbuf</code> is 16 KiB
+  (byte-limited by <code>g1a_buf</code>), the canvas <code>visbuf</code> is <code>G1_VIS_CAP</code> = 2560
+  bytes, and the result buffer is 4 KiB.</li>
+</ul>
+<hr>
+<h2 id="6-initialisation-and-loading-sequence">6. Initialisation and loading sequence</h2>
+<p>Minimal correct lifecycle, language-neutral:</p>
+<pre><code>instantiate(wasm, host_imports)      # all declared imports required
+glon_init()                          # once, before anything else
+ptr = glon_alloc(len(src)); if ptr == 0 -&gt; allocation failure
+write src bytes at ptr
+glon_load(ptr, len(src))             # extend machine (may repeat: libs, app)
+# then, per interaction:
+ptr = glon_alloc(len(token)); write token
+glon_route(ptr, len)  or  glon_event(ptr, len)  or
+   (alloc token + value, then glon_event_value) / glon_event_bytes
+# output arrives through host_set_html / host_canvas_script during the call
+# for the primer path:
+ptr = glon_alloc(len(primer_src)); write primer_src
+glon_run(ptr, len)
+text = memory[glon_result_ptr() .. glon_result_ptr()+glon_result_len()]
+</code></pre>
+<p>Key points:</p>
+<ul>
+<li><code>glon_init</code> once, before anything else.</li>
+<li>Each <code>glon_alloc</code> result is consumed by the very next execution entry. Allocate
+  and use within one interaction.</li>
+<li>Multiple <code>glon_load</code> calls are valid and cumulative; libraries are loaded
+  before the app.</li>
+</ul>
+<p>JavaScript example (the pattern used by <code>standalone/glon.js</code> and the browser
+hosts):</p>
+<pre><code class="language-js">const ex = /* instantiate glon.wasm */;
+const enc = new TextEncoder();
+const view = () =&gt; new Uint8Array(ex.memory.buffer);   // fresh: memory can grow
+
+function put(s) {
+  const b = enc.encode(s);
+  const p = ex.glon_alloc(b.length);
+  if (p === 0) throw new Error(&quot;glon_alloc failed&quot;);
+  view().set(b, p);
+  return [p, b.length];
+}
+
+ex.glon_init();
+let [p, n] = put(source);
+if (ex.glon_load(p, n) !== 0) throw new Error(&quot;glon_load failed&quot;);
+
+[p, n] = put(&quot;home&quot;);
+if (ex.glon_route(p, n) !== 0) throw new Error(&quot;glon_route failed&quot;);
+
+// primer-style result
+[p, n] = put(&quot;+ 1 2&quot;);
+ex.glon_run(p, n);
+const text = new TextDecoder().decode(
+  view().subarray(ex.glon_result_ptr(), ex.glon_result_ptr() + ex.glon_result_len()));
+</code></pre>
+<hr>
+<h2 id="7-error-handling">7. Error handling</h2>
+<table>
+<thead>
+<tr>
+<th>function</th>
+<th>return</th>
+<th>meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>glon_alloc</code></td>
+<td><code>0</code></td>
+<td>allocation failure (arena exhausted); no other error</td>
+</tr>
+<tr>
+<td><code>glon_alloc</code></td>
+<td><code>!= 0</code></td>
+<td>pointer to <code>len</code> writable bytes</td>
+</tr>
+<tr>
+<td><code>glon_init</code></td>
+<td><code>0</code></td>
+<td>always</td>
+</tr>
+<tr>
+<td><code>glon_load</code></td>
+<td><code>0</code></td>
+<td>success</td>
+</tr>
+<tr>
+<td></td>
+<td><code>-1</code></td>
+<td>source length ≥ 16384</td>
+</tr>
+<tr>
+<td></td>
+<td><code>-2</code></td>
+<td>parse error</td>
+</tr>
+<tr>
+<td></td>
+<td><code>-3</code></td>
+<td>persistent run returned a negative result</td>
+</tr>
+<tr>
+<td><code>glon_call</code></td>
+<td><code>0</code> / <code>-1</code> (bad name length) / <code>-2</code> (parse) / <code>-3</code> (run)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>glon_route</code> / <code>glon_event</code></td>
+<td><code>0</code> / <code>-1</code> (zero or oversized token length) / <code>-2</code> (dispatch, incl. delimiter in token)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>glon_event_value</code></td>
+<td><code>0</code> / <code>-1</code> (bad token length or value &gt; 200) / <code>-2</code> (dispatch, incl. delimiter)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>glon_event_bytes</code></td>
+<td><code>0</code> / <code>-1</code> (bad token) / <code>-2</code> (dispatch, incl. data &gt; 12000)</td>
+<td></td>
+</tr>
+<tr>
+<td><code>glon_run</code></td>
+<td><code>0</code> / <code>-1</code> (source too long)</td>
+<td>outcome text is always set on <code>0</code></td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li><strong>Null/zero pointer:</strong> <code>0</code> from <code>glon_alloc</code> means failure. A zero <code>ptr</code>
+  argument to an execution entry is not valid input.</li>
+<li><strong>Dispatch failures:</strong> <code>-2</code> covers a malformed token, a missing
+  <code>route</code>/<code>do-event</code> result, or an internal parse/run failure. Parser and
+  evaluator detail is not exposed through a numeric code.</li>
+<li><strong>Success:</strong> <code>0</code>.</li>
+<li><strong>Error text and the result buffer:</strong> only <code>glon_run</code> exposes text, through
+  <code>glon_result_ptr</code>/<code>glon_result_len</code>. For <code>-2</code> dispatch failures, no error text
+  is delivered through the result buffer; route/event output is the only
+  channel.</li>
+<li>Severity note (from <code>r0_s1_show.c</code>): an uncaught Glon <code>SIN!</code> is a language
+  error; a context-full halt is a machine-level fail-stop. <code>glon_run</code> reports
+  both as text.</li>
+</ul>
+<hr>
+<h2 id="8-re-entrancy-concurrency">8. Re-entrancy / concurrency</h2>
+<ul>
+<li>The runtime is a <strong>single, global, mutable machine</strong> (<code>M[]</code>, loader heap,
+  intern tables, static C buffers). It has no locking.</li>
+<li><strong>Multiple concurrent calls are not supported.</strong> Calls are expected to be
+  serialised by the host. It is <strong>not currently guaranteed</strong> that calls from
+  multiple threads (or workers sharing an instance) are safe; a WASM instance
+  is not shareable across threads under default settings.</li>
+<li><strong>Re-entrancy is not currently guaranteed.</strong> A <code>host_*</code> import callback runs
+  synchronously on the runtime's stack. A host must not call back into a Glon
+  export from inside <code>host_print</code>, <code>host_set_text</code>, <code>host_set_html</code>,
+  <code>host_canvas_script</code>, or <code>host_call</code>. In particular the GLON_LIVE outbound
+  <code>host_call</code> callback is invoked <em>during</em> <code>glon_route</code>/<code>glon_event</code>; re-entering
+  the runtime there is undefined today.</li>
+<li>One WASM instance is expected to host <strong>one active execution context</strong>. If a
+  host wants independent contexts, instantiate separate modules (each has its
+  own linear memory and <code>M[]</code>); this is not exercised by the current tests.</li>
+</ul>
+<p>Where the code does not establish a guarantee, this document says "not
+currently guaranteed" rather than asserting one.</p>
+<hr>
+<h2 id="9-abi-invariants-implementer-checklist">9. ABI invariants (implementer checklist)</h2>
+<p>Verified against <code>standalone/glon.c</code> and the tests:</p>
+<ul>
+<li>Call <code>glon_init()</code> once before <code>glon_load</code>/<code>glon_call</code>/route/event/run.</li>
+<li>Supply every import the module declares, or instantiation fails.</li>
+<li>Check <code>glon_alloc</code> for <code>0</code> and treat it as allocation failure.</li>
+<li>Write into the memory returned by <code>glon_alloc</code>; there is no commit/free call.</li>
+<li>Treat every <code>glon_alloc</code> pointer as valid only until the next execution entry
+  (<code>glon_load</code>, <code>glon_call</code>, <code>glon_route</code>, <code>glon_event</code>, <code>glon_event_value</code>,
+  <code>glon_event_bytes</code>, <code>glon_run</code>); copy data out first if it must survive.</li>
+<li>Multiple allocations before one execution entry may all be live; they do not
+  alias each other.</li>
+<li>Read/copy <code>glon_run</code> results before the next <code>glon_run</code> (and copy them if they
+  must outlive it).</li>
+<li>Use <code>(pointer, length)</code>; do not assume NUL termination or a specific text
+  encoding.</li>
+<li>Re-create linear-memory views after calls, because memory can grow.</li>
+<li>Respect the documented size limits (source &lt; 16384; <code>glon_call</code> name ≤ 60;
+  route/event token ≤ 63; <code>glon_event_value</code> value ≤ 200;
+  <code>glon_event_bytes</code> data ≤ 12000).</li>
+<li>Do not call Glon exports re-entrantly from a host import callback.</li>
+<li>Do not retain ABI pointers across calls or assume cross-instance pointer
+  validity.</li>
+</ul>
+<hr>
+<h2 id="10-d116-historical-note">10. D11.6 historical note</h2>
+<p>Before D11.6, <code>glon_alloc</code> simply called the runtime's bump allocator over the
+single 64 KiB <code>heap</code>:</p>
+<pre><code class="language-c">int glon_alloc(unsigned int len) { return (int)(intptr_t)malloc(len + 1); }
+</code></pre>
+<p>That heap never frees, because the runtime's interner stores symbol spellings
+there for the life of the machine. A long-lived host such as Glon Patrol, which
+forwards one <code>patrol-tick</code> event per animation frame, therefore leaked a little
+of the 64 KiB on every event and eventually exhausted the heap. When the heap
+was full, <code>glon_alloc</code> returned <code>0</code>; a host that wrote through the returned
+pointer to address <code>0</code> could corrupt machine cell 0, and two allocations made
+before one event (token + value) could collapse onto <code>0</code> instead of remaining
+distinct live buffers.</p>
+<p>D11.6 separated the two lifetimes:</p>
+<ul>
+<li><strong>persistent runtime allocation</strong> stays on the never-freed <code>heap</code> (interned
+  symbols);</li>
+<li><strong>transient host ABI allocation</strong> moved to a separate <code>abi_heap[65536]</code> whose
+  bump pointer is reset at each execution entry (<code>abi_reset()</code>), and
+  <code>glon_alloc</code> now returns <code>0</code> when the transient arena is full.</li>
+</ul>
+<p>This is why the lifetime contract in §3.2 is "one execution entry": it is what
+makes a sustained, high-frequency host possible without unbounded growth. The
+regression that pins this behaviour is <code>demo/shop/abi_arena_wasm_test.js</code>
+(<code>make wasm-abi-test</code>).</p>
+<hr>
+<h2 id="11-abi-stability">11. ABI stability</h2>
+<ul>
+<li><strong>Current / provisional.</strong> There is no ABI version constant, no negotiation,
+  and no stated compatibility policy in the repository. Nothing here claims the
+  ABI is frozen.</li>
+<li><strong>Frozen scope.</strong> <code>check-frozen-s1.sh</code> freezes the S1 substrate files
+  (<code>s1.c</code>, <code>s1.h</code>, <code>tests.c</code>, <code>adversarial.c</code>, <code>claims.c</code>) at commit
+  <code>f90496c2</code>. That is the <em>execution substrate</em>, not the WASM host ABI.</li>
+<li><strong>GLON_LIVE is experimental.</strong> <code>glon_event_bytes</code> and the <code>host_call</code> import
+  exist only in the separate <code>-DGLON_LIVE</code> build; the default G1A/shop build
+  keeps the four-import ABI untouched.</li>
+<li><strong>Recommendation for host authors:</strong> pin to a specific commit or tag. The
+  source of truth for the interface is <code>standalone/glon.c</code>; the browser hosts
+  are examples, not specifications.</li>
+</ul>
+<hr>
+<h2 id="12-tested-host-behaviour">12. Tested host behaviour</h2>
+<p>The following tests exercise the ABI. "node" tests were run with the Windows
+<code>node.exe</code> v24 in this environment; the CDP tests require a debug Chrome.</p>
+<table>
+<thead>
+<tr>
+<th>test</th>
+<th>command</th>
+<th>demonstrates</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>demo/shop/abi_arena_wasm_test.js</code></td>
+<td><code>make wasm-abi-test</code></td>
+<td>10k <code>glon_alloc</code>(token)+<code>glon_alloc</code>(value)+<code>glon_event_value</code> and 10k valueless <code>glon_event</code> calls: 0 allocation failures, 0 token/value aliasing, correct dispatch throughout, and a 60000-byte single allocation still fits (D11.6 arena).</td>
+</tr>
+<tr>
+<td><code>demo/shop/binding_case_wasm_test.js</code></td>
+<td><code>make wasm-binding-test</code></td>
+<td>21 binding/closure-origin and <code>CASE</code> scenarios on the real WASM, matching the native <code>r0_s1_case_tests.c</code>.</td>
+</tr>
+<tr>
+<td><code>demo/shop/node_test.js</code></td>
+<td><code>make wasm-g1a-test</code></td>
+<td>G1E launcher / lazy load / events / persistence / canvas on the real module.</td>
+</tr>
+<tr>
+<td><code>demo/shop/primer_node_test.js</code></td>
+<td><code>make wasm-primer-test</code></td>
+<td>30 primer examples through <code>glon_run</code>; <code>glon_result_ptr</code>/<code>glon_result_len</code>; run isolation.</td>
+</tr>
+<tr>
+<td><code>demo/shop/live_node_test.js</code></td>
+<td><code>make wasm-live-test</code></td>
+<td>GLON_LIVE <code>host_call</code> round trip and <code>glon_event_bytes</code>.</td>
+</tr>
+<tr>
+<td><code>demo/shop/traffic_node_test.js</code></td>
+<td><code>make wasm-traffic-test</code></td>
+<td>long-running application state over repeated route/event.</td>
+</tr>
+<tr>
+<td><code>demo/shop/linda_node_test.js</code></td>
+<td><code>make wasm-linda-test</code></td>
+<td>cooperative multitasking across repeated events.</td>
+</tr>
+<tr>
+<td><code>demos/kaka/kaka_wasm_test.js</code></td>
+<td><code>make wasm-kaka-test</code></td>
+<td>self-test + 1200-tick soak with held keys and valued events; asserts <code>allocFail == 0</code>, continuous drawing, and a stable restart.</td>
+</tr>
+<tr>
+<td><code>demos/patrol/long_session.html</code> + <code>demos/patrol/long_session_cdp.js</code></td>
+<td><code>node demos/patrol/long_session_cdp.js</code> (debug Chrome)</td>
+<td>real-browser long-session soak past the historical failure threshold; asserts <code>allocFail == 0</code>, no JS/WASM errors, input still live after restart.</td>
+</tr>
+<tr>
+<td><code>demos/kaka/{tick,refresh_rate,berry}_regression_cdp.js</code></td>
+<td>browser CDP</td>
+<td>tick advancement, display-rate independence, and long-session berry-pool recycling (no allocation leaks).</td>
+</tr>
+<tr>
+<td><code>r0_s1_g1a_live_tests.c</code></td>
+<td><code>make glon-live-native-test</code></td>
+<td>native focused test of the GLON_LIVE boundary (<code>r0_s1_g1a_live.c</code>).</td>
+</tr>
+<tr>
+<td><code>./check-frozen-s1.sh</code></td>
+<td><code>make test</code> (first step)</td>
+<td>frozen-S1 guard: S1 substrate files unchanged since <code>f90496c2</code>.</td>
+</tr>
+</tbody>
+</table>
+<p>Note: <code>standalone/node_test.js</code> failed in this environment against the <strong>stale
+committed</strong> <code>standalone/glon.wasm</code> (it predates the <code>masm</code> rename and
+<code>glon_run</code>); the <code>Makefile</code> target rebuilds that artifact before running. See
+the report.</p>
+<hr>
+<h2 id="13-native-versus-wasm-distinction">13. Native versus WASM distinction</h2>
+<p><strong>WASM-specific (this document):</strong></p>
+<ul>
+<li>the <code>glon_*</code> export names, their <code>i32</code> signatures, and the <code>env.host_*</code>
+  imports;</li>
+<li><code>glon_alloc</code> / the transient <code>abi_heap</code> arena and its one-execution-entry
+  lifetime (the native session host allocates differently);</li>
+<li><code>glon_result_ptr</code>/<code>glon_result_len</code> and the static result buffer;</li>
+<li>linear-memory view/growth handling;</li>
+<li><code>host_set_html</code>/<code>host_canvas_script</code> as DOM/presentation imports.</li>
+</ul>
+<p><strong>Reusable native concepts (not WASM-bound):</strong></p>
+<ul>
+<li>the <code>current-route</code> / <code>current-event</code> / <code>current-value</code> binding convention
+  and the <code>[ do route ]</code> / <code>[ do do-event ]</code> dispatch that <code>r0_s1_g1a.c</code>
+  implements browser-agnostically;</li>
+<li>parse → run → render-fragment (<code>r0_s1_g1a_render_fragment</code>);</li>
+<li>the GLON_LIVE request-fragment encoding (first byte <code>0x01</code>, <code>op</code> bytes,
+  <code>0x00</code>, <code>arg</code> bytes) in <code>r0_s1_g1a_live.c</code>;</li>
+<li><code>r0_s1_show_run</code> outcome text (<code>r0_s1_show.c</code>), shared by the native primer
+  and <code>glon_run</code>.</li>
+</ul>
+<p><strong>Not part of the core Glon ABI:</strong></p>
+<ul>
+<li>the Canvas/View drawing command vocabulary (<code>C</code>/<code>R</code>/<code>O</code>/<code>T</code>, <code>B</code>/<code>L</code>/<code>D</code>/<code>M</code>)
+  interpreted by <code>demo/shop/host.js</code>, <code>demos/patrol/patrol-host.js</code>, and
+  <code>demos/kaka/kaka-host.js</code>. That is the browser presentation protocol; a
+  native or non-browser host may implement <code>host_canvas_script</code> however it
+  wishes.</li>
+<li>the native host capability protocol (<code>GLON-HOST-CAPABILITIES.md</code>,
+  <code>GLON-DESKTOP-D6.md</code>) and the desktop TCP data plane.</li>
+</ul>
+<hr>
+<h2 id="appendix-authoritative-export-sets">Appendix: authoritative export sets</h2>
+<p>Read directly from the built modules:</p>
+<pre><code>demo/shop/glon.wasm  (G1A)
+  imports: env.host_set_text, env.host_print, env.host_set_html, env.host_canvas_script
+  exports: memory,
+           glon_alloc, glon_init, glon_load, glon_call,
+           glon_route, glon_event, glon_event_value,
+           glon_run, glon_result_ptr, glon_result_len,
+           emscripten_stack_get_current, _emscripten_stack_restore,
+           __indirect_function_table
+
+demo/shop/glon-live.wasm  (GLON_LIVE)
+  imports: env.host_set_text, env.host_print, env.host_call,
+           env.host_set_html, env.host_canvas_script
+  exports: the G1A set plus glon_event_bytes
+
+standalone/glon.wasm  (W2; committed binary is stale — rebuild with
+                       `make wasm-standalone`)
+  imports: env.host_set_text, env.host_print
+  exports (current source): memory,
+           glon_alloc, glon_init, glon_load, glon_call,
+           glon_run, glon_result_ptr, glon_result_len,
+           emscripten_stack_get_current, _emscripten_stack_restore,
+           __indirect_function_table
+</code></pre>
+</main>
+<footer>Generated from the pinned upstream Markdown at <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code>. The original Markdown is preserved under <a href="../source/">source/</a>.</footer>
+
+</body>
+</html>

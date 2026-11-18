@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Glon Programming Challenges</title>
+<title>Glon — Language Documentation and Challenges</title>
 <style>
 :root {
   --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
@@ -58,16 +58,18 @@ footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); fo
 </head>
 <body>
 <nav class="topnav" aria-label="Primary navigation">
-  <a class="brand" href="index.html">Glon Challenges</a>
+  <a class="brand" href="index.html">Glon</a>
   <div class="navlinks">
-    <a href="index.html">Challenges</a>
+    <a href="index.html#challenges">Challenges</a>
+    <a href="language/">Language</a>
+    <a href="grammar/">Grammar</a>
     <a href="index.html#verification">Verification</a>
   </div>
 </nav>
 
 <header>
-  <h1>Glon Programming Challenges</h1>
-  <p class="muted">Independent REBOL Cookbook and Rosetta Code style challenges, solved with the published Glon grammar and existing vocabulary.</p>
+  <h1>Glon</h1>
+  <p class="muted">Canonical public language documentation and verified REBOL Cookbook / Rosetta Code style programming challenges, built from the published Glon grammar and upstream sources.</p>
   <div class="meta">
     <div><strong>Challenges</strong>1</div>
     <div><strong>Cases passed</strong>7 / 7</div>
@@ -76,19 +78,35 @@ footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); fo
   </div>
 </header>
 <main>
+  <h2 id="documentation">Language documentation</h2>
+  <p>Canonical public documentation for Glon, generated from the pinned upstream Markdown and EBNF. Development and authoritative source specifications remain in <a href="https://github.com/gchiu/rebol-substrate-experiment">gchiu/rebol-substrate-experiment</a>.</p>
+  <div class="cards">
+    <div class="card"><h3><a href="language/">Language Reference</a></h3><p>Start here: laws, specification, evaluation, host ABI and AI authoring guide.</p></div>
+    <div class="card"><h3><a href="grammar/">Grammar &amp; Railroad Diagrams</a></h3><p>All 20 grammar productions, EBNF and generated railroad diagrams.</p></div>
+    <div class="card"><h3><a href="language/laws.html">Alpha Language Laws</a></h3><p>The normative Alpha language contract.</p></div>
+    <div class="card"><h3><a href="language/spec.html">Language Specification</a></h3><p>Complete descriptive reference and traceability matrix.</p></div>
+    <div class="card"><h3><a href="language/evaluation.html">Evaluation Model</a></h3><p>Execution, binding, calls, result sets, closures, return and judge.</p></div>
+    <div class="card"><h3><a href="language/host-abi.html">Host ABI</a></h3><p>Native C, WASM and host capability boundary.</p></div>
+  </div>
+  <p class="muted">Raw sources for AI agents: <a href="source/GLON-LANGUAGE-SPEC.md">GLON-LANGUAGE-SPEC.md</a>,
+     <a href="source/GLON-ALPHA-LAWS.md">GLON-ALPHA-LAWS.md</a>,
+     <a href="source/GLON-EVALUATION-MODEL.md">GLON-EVALUATION-MODEL.md</a>,
+     <a href="source/GLON-HOST-ABI.md">GLON-HOST-ABI.md</a>,
+     <a href="source/glon-grammar.ebnf">glon-grammar.ebnf</a>.</p>
+
   <h2 id="challenges">Challenges</h2>
   <div class="cards"><div class="card"><h3><a href="challenges/gcd/index.html">Greatest Common Divisor</a></h3><p><span class="status pass">VERIFIED</span></p><p>Compute the greatest common divisor of two nonnegative integers using Euclid&#x27;s algorithm. This first Glon implementation uses repeated subtraction.</p><p class="muted">Interpreter: <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code><br>Cases: 7 / 7 passed</p></div></div>
   <h2 id="verification">Verification</h2>
   <p>Each result below comes from executing the pinned native Glon CLI. Expected values are independent problem results; actual stdout, stderr, exit status, duration, timeouts and the interpreter commit are recorded in the JSON. Harness failures are reported separately from language failures.</p>
   <p class="muted">Generated from results. Publication requires every case to pass.</p>
   <h2 id="docs">Language documentation</h2>
-  <ul><li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/">Language reference</a></li>
-<li><a href="https://gchiu.github.io/rebol-substrate-experiment/grammar/">Grammar and railroad diagrams</a></li>
-<li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/laws.md">Alpha language laws</a></li>
-<li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/spec.md">Language specification</a></li>
-<li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/evaluation.md">Evaluation model</a></li>
-<li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/host-abi.md">Host ABI</a></li>
-<li><a href="https://gchiu.github.io/rebol-substrate-experiment/language/ai-authoring.md">AI authoring guide</a></li></ul>
+  <ul><li><a href="https://gchiu.github.io/glon/language/">Language reference</a></li>
+<li><a href="https://gchiu.github.io/glon/grammar/">Grammar and railroad diagrams</a></li>
+<li><a href="https://gchiu.github.io/glon/language/laws.html">Alpha language laws</a></li>
+<li><a href="https://gchiu.github.io/glon/language/spec.html">Language specification</a></li>
+<li><a href="https://gchiu.github.io/glon/language/evaluation.html">Evaluation model</a></li>
+<li><a href="https://gchiu.github.io/glon/language/host-abi.html">Host ABI</a></li>
+<li><a href="https://gchiu.github.io/glon/language/ai-authoring.html">AI authoring guide</a></li></ul>
 </main>
 <footer>Static challenge index. No framework, CDN or runtime service. Source: <a href="https://github.com/gchiu/glon">gchiu/glon</a>.</footer>
 

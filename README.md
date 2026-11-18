@@ -1,16 +1,25 @@
-# Glon Programming Challenges
+# Glon Programming Challenges and Language Documentation
 
-An independent challenge suite for the published Glon Alpha language.
+An independent challenge suite and the canonical public documentation portal for the published Glon Alpha language.
 
 The purpose is to measure how many REBOL Cookbook and Rosetta Code style
 problems can be solved using Glon's existing, published grammar and vocabulary
 — without adding primitives, changing the parser, or modifying the runtime.
 
-This repository contains only challenge programs, verification scripts and a
-small static results website. It does **not** contain the Glon interpreter,
-its applications, demos or the engineering website. The interpreter and
-authoritative language documentation are pinned from
+This repository contains challenge programs, verification scripts, generated
+language documentation and the static public website. It does **not** contain
+the Glon interpreter, its applications, demos or the engineering website. The
+interpreter and authoritative language sources are pinned from
 [`gchiu/rebol-substrate-experiment`](https://github.com/gchiu/rebol-substrate-experiment).
+
+The canonical public documentation portal is:
+
+- https://gchiu.github.io/glon/language/
+- https://gchiu.github.io/glon/grammar/
+
+The engineering repository remains authoritative for language development and
+source specifications. This repository generates rendered HTML from the pinned
+upstream Markdown and EBNF; it does not maintain divergent handwritten copies.
 
 ## Current status
 
@@ -34,15 +43,19 @@ build:      make glon
 The build target produces the native `glon` CLI plus its `glon-lib/` libraries
 from that commit. The interpreter is not copied into this repository.
 
-Authoritative language documents:
+Rendered language documentation:
 
-- [Language reference](https://gchiu.github.io/rebol-substrate-experiment/language/)
-- [Grammar and railroad diagrams](https://gchiu.github.io/rebol-substrate-experiment/grammar/)
-- [Alpha language laws](https://gchiu.github.io/rebol-substrate-experiment/language/laws.md)
-- [Language specification](https://gchiu.github.io/rebol-substrate-experiment/language/spec.md)
-- [Evaluation model](https://gchiu.github.io/rebol-substrate-experiment/language/evaluation.md)
-- [Host ABI](https://gchiu.github.io/rebol-substrate-experiment/language/host-abi.md)
-- [AI authoring guide](https://gchiu.github.io/rebol-substrate-experiment/language/ai-authoring.md)
+- [Language reference](https://gchiu.github.io/glon/language/)
+- [Grammar and railroad diagrams](https://gchiu.github.io/glon/grammar/)
+- [Alpha language laws](https://gchiu.github.io/glon/language/laws.html)
+- [Language specification](https://gchiu.github.io/glon/language/spec.html)
+- [Evaluation model](https://gchiu.github.io/glon/language/evaluation.html)
+- [Host ABI](https://gchiu.github.io/glon/language/host-abi.html)
+- [AI authoring guide](https://gchiu.github.io/glon/language/ai-authoring.html)
+
+Original upstream Markdown and EBNF are preserved under `/source/`, including
+`source/GLON-LANGUAGE-SPEC.md`, `source/GLON-ALPHA-LAWS.md` and
+`source/glon-grammar.ebnf`.
 
 ## Repository layout
 
@@ -54,9 +67,16 @@ challenges/<name>/
 scripts/
   build-interpreter.sh   build the pinned engineering commit in a temp/tools dir
   run-challenges.py      execute cases and write machine-readable results
-  build-site.py          render the static results site from verified results
-docs/                    generated static challenge index (GitHub Pages)
+  build-site.py          render the challenge site from verified results
+  build-docs.py          render upstream Markdown/EBNF into language/grammar pages
+docs/                    generated static site (GitHub Pages)
+  challenges/            verified challenge pages
+  language/              rendered language documentation
+  grammar/               grammar reference and railroad diagrams
+  source/                original Markdown and EBNF at stable URLs
+  assets/                locally vendored Mermaid runtime
 interpreter.json         pinned interpreter commit and documentation links
+requirements.txt         pinned documentation build dependency
 .github/workflows/       verification and Pages publication
 ```
 
@@ -87,6 +107,18 @@ python3 scripts/build-site.py \
   --require-pass
 ```
 
+Rendered documentation is built from the same pinned upstream checkout:
+
+```sh
+python3 -m pip install -r requirements.txt
+python3 scripts/build-docs.py --upstream .tools/glon-eng --out docs
+```
+
+`build-docs.py` verifies that the checkout is exactly the commit in
+`interpreter.json`, copies the original Markdown/EBNF into `docs/source/`,
+renders language pages into `docs/language/`, and imports the generated grammar
+page and railroad SVGs into `docs/grammar/`.
+
 `run-challenges.py` exits with:
 
 - `0` — every case passed;
@@ -115,10 +147,13 @@ the last successfully published site.
 ## CI and website
 
 - `.github/workflows/verify.yml` runs on pushes and pull requests, builds the
-  pinned interpreter, executes all challenges and validates the site builder.
+  pinned interpreter, executes all challenges, renders the documentation and
+  validates the site builder.
 - `.github/workflows/publish.yml` runs verification first and deploys to GitHub
   Pages only after it succeeds.
-- The committed `docs/` tree is a local snapshot generated from actual results.
-  GitHub Actions rebuilds it before publication.
+- The committed `docs/` tree is a local snapshot generated from actual results
+  and the pinned upstream documentation. GitHub Actions rebuilds it before
+  publication.
 
-The website is plain static HTML/CSS with no framework, CDN or runtime service.
+The website is plain static HTML/CSS. Mermaid diagrams use a locally vendored
+runtime (`docs/assets/mermaid.min.js`); there is no CDN or runtime service.

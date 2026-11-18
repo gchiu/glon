@@ -20,6 +20,9 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Install documentation build dependency
+        run: python -m pip install -r requirements.txt
+
       - name: Read pinned interpreter commit
         id: interpreter
         run: |
@@ -35,12 +38,18 @@ jobs:
             --output results \
             --run-probes
 
-      - name: Build verified static site
+      - name: Build verified challenge site
         run: |
           python3 scripts/build-site.py \
             --results results \
             --out _site \
             --require-pass
+
+      - name: Build language documentation from pinned upstream Markdown
+        run: |
+          python3 scripts/build-docs.py \
+            --upstream "$RUNNER_TEMP/glon-eng" \
+            --out _site
 
       - name: Upload verification results
         if: always()

@@ -117,6 +117,7 @@ def doc_links(config: dict) -> str:
 
 
 def page_shell(title: str, body: str, home_href: str = "index.html") -> str:
+    link_prefix = home_href.rsplit("/", 1)[0] + "/" if "/" in home_href else ""
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -127,9 +128,11 @@ def page_shell(title: str, body: str, home_href: str = "index.html") -> str:
 </head>
 <body>
 <nav class="topnav" aria-label="Primary navigation">
-  <a class="brand" href="{esc(home_href)}">Glon Challenges</a>
+  <a class="brand" href="{esc(home_href)}">Glon</a>
   <div class="navlinks">
-    <a href="{esc(home_href)}">Challenges</a>
+    <a href="{esc(home_href)}#challenges">Challenges</a>
+    <a href="{esc(link_prefix)}language/">Language</a>
+    <a href="{esc(link_prefix)}grammar/">Grammar</a>
     <a href="{esc(home_href)}#verification">Verification</a>
   </div>
 </nav>
@@ -264,8 +267,8 @@ def main() -> int:
     passed = sum(r.get("summary", {}).get("passed", 0) for r in results)
     index_body = f"""
 <header>
-  <h1>Glon Programming Challenges</h1>
-  <p class="muted">Independent REBOL Cookbook and Rosetta Code style challenges, solved with the published Glon grammar and existing vocabulary.</p>
+  <h1>Glon</h1>
+  <p class="muted">Canonical public language documentation and verified REBOL Cookbook / Rosetta Code style programming challenges, built from the published Glon grammar and upstream sources.</p>
   <div class="meta">
     <div><strong>Challenges</strong>{len(results)}</div>
     <div><strong>Cases passed</strong>{passed} / {total}</div>
@@ -274,6 +277,22 @@ def main() -> int:
   </div>
 </header>
 <main>
+  <h2 id="documentation">Language documentation</h2>
+  <p>Canonical public documentation for Glon, generated from the pinned upstream Markdown and EBNF. Development and authoritative source specifications remain in <a href="https://github.com/gchiu/rebol-substrate-experiment">gchiu/rebol-substrate-experiment</a>.</p>
+  <div class="cards">
+    <div class="card"><h3><a href="language/">Language Reference</a></h3><p>Start here: laws, specification, evaluation, host ABI and AI authoring guide.</p></div>
+    <div class="card"><h3><a href="grammar/">Grammar &amp; Railroad Diagrams</a></h3><p>All 20 grammar productions, EBNF and generated railroad diagrams.</p></div>
+    <div class="card"><h3><a href="language/laws.html">Alpha Language Laws</a></h3><p>The normative Alpha language contract.</p></div>
+    <div class="card"><h3><a href="language/spec.html">Language Specification</a></h3><p>Complete descriptive reference and traceability matrix.</p></div>
+    <div class="card"><h3><a href="language/evaluation.html">Evaluation Model</a></h3><p>Execution, binding, calls, result sets, closures, return and judge.</p></div>
+    <div class="card"><h3><a href="language/host-abi.html">Host ABI</a></h3><p>Native C, WASM and host capability boundary.</p></div>
+  </div>
+  <p class="muted">Raw sources for AI agents: <a href="source/GLON-LANGUAGE-SPEC.md">GLON-LANGUAGE-SPEC.md</a>,
+     <a href="source/GLON-ALPHA-LAWS.md">GLON-ALPHA-LAWS.md</a>,
+     <a href="source/GLON-EVALUATION-MODEL.md">GLON-EVALUATION-MODEL.md</a>,
+     <a href="source/GLON-HOST-ABI.md">GLON-HOST-ABI.md</a>,
+     <a href="source/glon-grammar.ebnf">glon-grammar.ebnf</a>.</p>
+
   <h2 id="challenges">Challenges</h2>
   <div class="cards">{''.join(cards)}</div>
   <h2 id="verification">Verification</h2>
@@ -284,7 +303,7 @@ def main() -> int:
 </main>
 <footer>Static challenge index. No framework, CDN or runtime service. Source: <a href="https://github.com/gchiu/glon">gchiu/glon</a>.</footer>
 """
-    (out / "index.html").write_text(page_shell("Glon Programming Challenges", index_body), encoding="utf-8")
+    (out / "index.html").write_text(page_shell("Glon — Language Documentation and Challenges", index_body), encoding="utf-8")
 
     for r in results:
         name = r.get("challenge", "unknown")

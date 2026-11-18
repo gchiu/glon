@@ -1,0 +1,2436 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Language Specification</title>
+<style>
+:root { --fg:#171a1f; --muted:#5d6573; --bg:#fdfdfc; --panel:#f3f5f7; --line:#d9dee4;
+        --accent:#2456a6; --code:#20262e; --ok:#1b6b42; }
+@media (prefers-color-scheme: dark) {
+  :root { --fg:#e7e9ed; --muted:#a0a8b4; --bg:#15171b; --panel:#1e2229; --line:#343b46;
+          --accent:#8db1f2; --code:#242a32; --ok:#7ad6a2; }
+}
+* { box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body { margin:0 auto; max-width:1040px; padding:0 16px 4rem; color:var(--fg); background:var(--bg);
+       font:16px/1.65 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; overflow-wrap:anywhere; }
+a { color:var(--accent); }
+h1,h2,h3,h4 { line-height:1.2; letter-spacing:-.01em; }
+h1 { font-size:clamp(2rem,5vw,3rem); margin:0 0 .4rem; }
+h2 { font-size:clamp(1.25rem,3vw,1.55rem); margin:2.2rem 0 .6rem; }
+h3 { font-size:1.1rem; margin:1.6rem 0 .4rem; }
+p { margin:.55rem 0; }
+code,pre { font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace; font-size:.9rem; }
+code { background:var(--code); color:#eef2f6; padding:.05rem .25rem; border-radius:3px; overflow-wrap:anywhere; }
+pre { background:var(--code); color:#eef2f6; border-radius:8px; padding:.8rem 1rem; overflow:auto; line-height:1.45; }
+pre code { background:none; padding:0; color:inherit; overflow-wrap:normal; }
+.muted { color:var(--muted); }
+.topnav { display:flex; flex-wrap:wrap; gap:.6rem 1rem; align-items:center; justify-content:space-between;
+          padding:.75rem 0; border-bottom:1px solid var(--line); margin-bottom:1.4rem; }
+.brand { font-weight:800; color:var(--fg); text-decoration:none; }
+.navlinks { display:flex; flex-wrap:wrap; gap:.45rem 1rem; font-size:.9rem; }
+.navlinks a { color:var(--muted); text-decoration:none; }
+.navlinks a:hover, .navlinks a:focus-visible { color:var(--accent); text-decoration:underline; }
+.pagelead { display:flex; flex-wrap:wrap; gap:.5rem 1rem; align-items:center; margin:0 0 1rem;
+            font-size:.86rem; color:var(--muted); }
+.pagelead a { font-weight:600; }
+table { border-collapse:collapse; width:100%; margin:.8rem 0 1.2rem; font-size:.92rem; table-layout:fixed; }
+th,td { border:1px solid var(--line); padding:.45rem .55rem; text-align:left; vertical-align:top; overflow-wrap:anywhere; }
+th { background:var(--panel); }
+blockquote { border-left:3px solid var(--line); margin:1rem 0; padding:.5rem 1rem; color:var(--muted); background:var(--panel); }
+ul,ol { padding-left:1.4rem; }
+li { margin:.2rem 0; }
+.mermaid { overflow-x:auto; text-align:center; margin:1.2rem 0; }
+.mermaid svg { max-width:100%; height:auto; }
+.cards { display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:.9rem; margin:1rem 0; }
+.card { border:1px solid var(--line); border-radius:9px; background:var(--panel); padding:1rem; }
+.card h3 { margin:.1rem 0 .35rem; }
+.card p:last-child { margin-bottom:0; }
+.source-list { font-size:.9rem; }
+footer { margin-top:3rem; padding-top:1rem; border-top:1px solid var(--line); color:var(--muted); font-size:.85rem; }
+@media (max-width:560px) {
+  body { padding:0 14px 3rem; }
+  .topnav { align-items:flex-start; }
+  pre { white-space:pre-wrap; overflow-wrap:anywhere; }
+}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="Site navigation">
+  <a class="brand" href="../">Glon</a>
+  <div class="navlinks">
+    <a href="../">Home</a>
+    <a href="index.html">Language</a>
+    <a href="../grammar/">Grammar</a>
+    <a href="../#challenges">Challenges</a>
+  </div>
+</nav>
+<main>
+<div class="pagelead"><a href="../source/GLON-LANGUAGE-SPEC.md">View Markdown source</a> <span>Upstream commit <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code></span></div>
+<h1 id="glon-language-specification">Glon Language Specification</h1>
+<p><strong>Status:</strong> descriptive specification of Glon Alpha as implemented in this
+repository. It records the language contract and the observed runtime; it does
+not create new language behaviour.</p>
+<p>This document is <strong>subordinate</strong> to:</p>
+<ol>
+<li><strong><code>GLON-ALPHA-LAWS.md</code></strong> — the normative Alpha language contract. Where
+   this document and the laws differ, the laws win.</li>
+<li><strong>The implementation</strong> — <code>r0_s1_runtime.c</code>, <code>r0_s1.h</code>, <code>m1_layout.h</code>, and
+   the frozen S1 substrate (<code>s1.c</code>, <code>s1.h</code>, <code>tests.c</code>, <code>adversarial.c</code>,
+   <code>claims.c</code>, tag <code>s1-frozen-v1</code>, commit <code>f90496c…</code>). The code is the ground
+   truth for addresses, capacities and any behaviour the laws do not name.</li>
+</ol>
+<p>The language is frozen at Alpha (<code>glon-alpha-v1</code>). The frozen S1 substrate is
+verified by <code>./check-frozen-s1.sh</code>.</p>
+<h2 id="how-to-read-this-specification">How to read this specification</h2>
+<p>Every statement that describes behaviour is labelled with one of:</p>
+<table>
+<thead>
+<tr>
+<th>Label</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>FROZEN</strong></td>
+<td>Guaranteed by an existing contract (<code>GLON-ALPHA-LAWS.md</code> or the frozen S1 contract).</td>
+</tr>
+<tr>
+<td><strong>IMPLEMENTED</strong></td>
+<td>Observed in the implementation but not guaranteed by a frozen contract.</td>
+</tr>
+<tr>
+<td><strong>EXPERIMENTAL</strong></td>
+<td>Present, but explicitly subject to change or not part of ordinary sessions.</td>
+</tr>
+<tr>
+<td><strong>UNRESOLVED</strong></td>
+<td>Insufficient evidence, unchecked behaviour, or conflicting descriptions. It is not a promise.</td>
+</tr>
+</tbody>
+</table>
+<p>An <strong>unqualified</strong> statement in a normative-looking section is FROZEN if it
+restates a law; otherwise it is IMPLEMENTED. Contradictions are recorded in
+§11 rather than silently resolved.</p>
+<p>Examples use <code>;;</code> comments. The Glon reader itself has no comment syntax:
+<code>;;</code> line comments are stripped by the <strong>host</strong> before parsing (see §1.1).</p>
+<hr>
+<h2 id="1-source-language">1. Source language</h2>
+<h3 id="11-source-envelope-and-comments">1.1 Source envelope and comments</h3>
+<p><strong>FROZEN host contract; IMPLEMENTED parser detail.</strong></p>
+<ul>
+<li>A program is a sequence of values. The canonical source form is one outer
+  block:</li>
+</ul>
+<p><code>glon
+  [
+      x: 5
+      + x 3
+  ]</code></p>
+<ul>
+<li>The native session host, the WASM <code>glon_load</code>/<code>glon_run</code> path, the Jupyter
+  host and the native <code>glon</code> CLI wrap an unwrapped cell as <code>[ src ]</code>. The
+  parser itself also accepts a top-level sequence of forms without the outer
+  brackets (<code>parse_program</code>, <code>r0_s1_runtime.c:3963</code>).</li>
+<li><strong><code>;;</code> line comments are not parser syntax.</strong> Hosts strip from <code>;;</code> to the
+  end of the line before parsing (<code>r0_s1_session.c:73</code>, <code>r0_s1_show.c:110</code>,
+  <code>standalone/glon.c:305</code>, <code>glon.c:62</code>). A single <code>;</code> is an ordinary token
+  character.</li>
+<li>The comment stripper is lexical and <strong>not string-aware</strong>. <code>;;</code> inside a
+  quoted string is also stripped. This is an IMPLEMENTED host limitation, not
+  a language comment rule.</li>
+<li>If a source begins with <code>[</code>, the parser parses that one outer block and
+  ignores any forms after it. This is an IMPLEMENTED parser quirk; canonical
+  hosts do not rely on trailing forms.</li>
+</ul>
+<h3 id="12-lexical-grammar">1.2 Lexical grammar</h3>
+<p><strong>IMPLEMENTED (reader at <code>r0_s1_runtime.c:177-216</code>, <code>643-661</code>, <code>764-886</code>,
+<code>3963-4002</code>).</strong></p>
+<p>Whitespace is the C <code>isspace</code> set: space, tab, newline, carriage return,
+vertical tab and form feed. The only structural delimiters are <code>[</code> and <code>]</code>.
+There are no parentheses, commas, semicolons, escapes, floats or character
+literals in the Glon reader.</p>
+<pre><code class="language-ebnf">source         = ws* ( block trailing-tail | top-item ( ws* top-item )* ws* ) ;
+trailing-tail  = any-byte* ;              (* ignored after a leading block *)
+top-item       = string | masm-form | form ;
+block          = &quot;[&quot; ( ws | block-item )* &quot;]&quot; ;
+block-item     = string | func-form | masm-form | form ;
+form           = block | integer | word ;
+func-form      = &quot;func&quot; form block? ;     (* body may be left to the next item *)
+masm-form      = ( &quot;masm&quot; | &quot;raw&quot; ) ( ws+ digit+ )? ws* masm-block ;
+masm-block     = &quot;[&quot; masm-tokens &quot;]&quot; ;
+string         = '&quot;' non-quote-byte* '&quot;' ;          (* item-start only; 0..512 bytes *)
+integer        = [ &quot;-&quot; ] digit+ ;
+word           = token ;
+word-value     = &quot;none&quot; | token &quot;:&quot; | &quot;:&quot; token | &quot;'&quot; token | token ;
+token          = token-byte+ ;            (* reader keeps the first 63 bytes *)
+token-byte     = ? any byte except whitespace, &quot;[&quot; or &quot;]&quot; ? ;
+non-quote-byte = ? any byte except double quote ? ;
+any-byte       = ? any byte 0..255 ? ;
+masm-tokens    = ? private S1 macro-assembly tokens ? ;
+digit          = &quot;0&quot; | &quot;1&quot; | &quot;2&quot; | &quot;3&quot; | &quot;4&quot; | &quot;5&quot; | &quot;6&quot; | &quot;7&quot; | &quot;8&quot; | &quot;9&quot; ;
+ws             = &quot; &quot; | &quot;\t&quot; | &quot;\n&quot; | &quot;\r&quot; | &quot;\v&quot; | &quot;\f&quot; ;
+</code></pre>
+<p>This grammar names the two levels that the reader actually has:
+<code>block-item</code>/<code>top-item</code> are what the block and program loops recognise
+(strings, <code>masm</code>/<code>raw</code>, and inside a block <code>func</code>); <code>form</code> is what
+<code>parse_form</code> recognises (block, integer or word only). A string at a <code>func</code>
+spec/body expression position is therefore read as a word token, not as a
+string literal. Keyword alternatives apply only when the whole maximal token
+is exactly <code>func</code>, <code>masm</code> or <code>raw</code>; <code>funcx</code> is a word. Top-level <code>func</code> is not
+special-cased by <code>parse_program</code>, so canonical hosts wrap source in one block.
+The grammar is lexical only: token scanning is maximal, so <code>a"b"</code> is one word
+while <code>1"x"</code> is an integer followed by a string. See
+<code>GLON-SYNTAX-DIAGRAMS.md</code> §11 for the consolidated note.</p>
+<p>Important lexical facts:</p>
+<ul>
+<li>A token is read up to the next whitespace, <code>[</code> or <code>]</code>, then <strong>truncated to
+  63 bytes</strong> (<code>char buf[64]</code>, <code>r0_s1_runtime.c:194-198</code>). Two long tokens that
+  share their first 63 bytes therefore intern to the same symbol.</li>
+<li>Forms need no whitespace when the next form starts with a delimiter:
+  <code>a[1]</code> is a word then a block; <code>1"x"</code> is an integer then a string. A quote
+  not at an item start is part of a word token (<code>a"b"</code> is one word).</li>
+<li><code>func</code> is special-cased only while parsing a <strong>block</strong>. An unwrapped
+  top-level <code>func</code> is an ordinary word to <code>parse_program</code>; canonical hosts
+  wrap the source in one block.</li>
+<li>Symbols are case-sensitive and interned in a fixed table of 512
+  (<code>r0_s1_runtime.c:22</code>, <code>56-64</code>). Exhaustion is a parse failure
+  (<code>symbol_table_full</code>), not a runtime error.</li>
+<li>Integer literals are decimal with an optional leading <code>-</code>. A leading <code>+</code> is
+  not accepted as a number; it is a word. <code>-</code> followed by a non-digit is a
+  word. There is no overflow check.</li>
+<li><code>none</code> is special: the exact token <code>none</code> is the NONE value. <code>none:</code>, <code>:none</code>
+  and <code>'none</code> are word forms with the symbol <code>none</code>. Rebinding <code>none:</code> does not
+  change the plain token <code>none</code>.</li>
+<li>There are no escape sequences in strings. <code>"</code> ends the string. A backslash
+  is an ordinary byte. An unterminated string is a syntax error.</li>
+<li>A string literal is <strong>expanded by the reader into two forms</strong>,
+  <code>mk-string [b0 b1 …]</code>, where each byte is a tagged integer 0–255. Therefore:</li>
+<li>the literal requires a <code>mk-string</code> binding at run time;</li>
+<li>it costs two forms against the 512-form block limit;</li>
+<li>it is limited to 512 bytes.</li>
+<li>The <code>func</code> and <code>masm</code>/<code>raw</code> forms are recognised lexically in item position
+  (inside a block for <code>func</code>; inside a block or at top level for <code>masm</code>/<code>raw</code>).
+  <code>func</code> is a reserved keyword in value position (symbol id 0). <code>return</code> is
+  reserved in value position (symbol id 1). <code>raw</code>/<code>masm</code> are parse-time forms;
+  <code>raw</code> is also a reserved symbol (id 2) used by the compatibility alias.</li>
+</ul>
+<h3 id="13-word-forms">1.3 Word forms</h3>
+<p><strong>FROZEN syntax; IMPLEMENTED evaluation.</strong></p>
+<p>After a token is read, the first matching rule wins:</p>
+<table>
+<thead>
+<tr>
+<th>Source token</th>
+<th>Kind</th>
+<th>Parsed value</th>
+<th>Evaluates to</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>none</code></td>
+<td>none literal</td>
+<td>NONE</td>
+<td>itself</td>
+</tr>
+<tr>
+<td><code>name:</code></td>
+<td>set-word</td>
+<td>SET-WORD <code>name</code></td>
+<td>RHS value; assigns</td>
+</tr>
+<tr>
+<td><code>:name</code></td>
+<td>get-word</td>
+<td>GET-WORD <code>name</code></td>
+<td>binding of <code>name</code>; never invokes</td>
+</tr>
+<tr>
+<td><code>'name</code></td>
+<td>lit-word</td>
+<td>LIT-WORD <code>name</code></td>
+<td>plain WORD <code>name</code> (data)</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>word</td>
+<td>WORD or BOUND <code>name</code></td>
+<td>lookup; if closure/native/RAW, invokes</td>
+</tr>
+</tbody>
+</table>
+<p>Consequences:</p>
+<ul>
+<li>The prefix <code>:</code> and <code>'</code> are part of the reader only. Their evaluated results
+  are values, not syntax.</li>
+<li><strong>Evaluating a lit-word yields a WORD, not a LIT-WORD.</strong> LIT-WORD cells can
+  exist as unevaluated block elements and print as <code>'name</code>; evaluation removes
+  the literal marker (<code>r0_s1_runtime.c:3735-3741</code>).</li>
+<li><code>x:</code> returns the value assigned. <code>:x</code> returns the value without invoking it.</li>
+<li>A trailing <code>:</code> wins over a leading <code>:</code> or <code>'</code>. For example <code>'x:</code> is a
+  set-word whose symbol is <code>'x</code>.</li>
+<li>An interior <code>/</code> is part of the token. <code>s/+</code>, <code>s/=</code>, <code>s/length</code> are ordinary
+  flat words. A bare <code>/</code> is integer division. There is no path evaluation,
+  namespace or qualified lookup (§9).</li>
+</ul>
+<h3 id="14-blocks">1.4 Blocks</h3>
+<p><strong>FROZEN.</strong></p>
+<ul>
+<li><code>[ ... ]</code> builds a loader block. Its operational layout is
+  <code>[count, site_id, elem0, elem1, ...]</code> (<code>BLK_COUNT</code>, <code>BLK_SITE</code>, <code>BLK_DATA</code>,
+  <code>r0_s1.h:399</code>).</li>
+<li>A block is <strong>data</strong>. It is not executed until <code>do</code>, <code>values</code>, <code>reduce</code>,
+  <code>either</code>, <code>judge</code>, a function body, or another form evaluates it.</li>
+<li>A bare block containing lexical BOUND references is not portable executable
+  code; see the escape law (§6.3).</li>
+<li>A managed block produced by <code>reduce</code> has the same layout but lives in the
+  managed heap. Managed blocks are data and are <strong>not executable</strong> as source
+  (<code>values</code>, <code>reduce</code>, <code>do</code> and <code>judge</code> reject them by address with a
+  fail-stop; §3.8).</li>
+</ul>
+<h3 id="15-func-and-masm-forms">1.5 <code>func</code> and <code>masm</code> forms</h3>
+<p><code>func</code> (<code>r0_s1_runtime.c:783-858</code>):</p>
+<pre><code class="language-glon">func &lt;spec-expression&gt; &lt;body-expression&gt;
+</code></pre>
+<ul>
+<li>Both spec and body are ordinary expressions and are evaluated at run time.</li>
+<li>The spec must evaluate to a block whose elements are the parameters; its
+  length is the closure's arity.</li>
+<li>The body must evaluate to a block. A non-block body is a machine fail-stop
+  (the law says <code>func</code> "fails loudly").</li>
+<li>Inside the canonical enclosing block, a <strong>literal</strong> body written directly
+  after the spec gets a fresh lexical site and scope from the block parser. A
+  <strong>computed</strong> body (<code>func :spec :body</code>, <code>func [] block-at rows i</code>) keeps the
+  lexical origin it was parsed with. Canonical hosts always wrap source in one
+  outer block, so this is the normal case. See §3.5.</li>
+<li><code>func</code> is a keyword; a value-position <code>func</code> is never looked up as an
+  ordinary word.</li>
+</ul>
+<p><code>masm</code>/<code>raw</code> (<code>parse_masm</code>, <code>r0_s1_runtime.c:686-760</code>):</p>
+<pre><code class="language-glon">masm [ ... ]          ;; canonical
+masm 2 [ ... ]        ;; optional arity, default 0
+raw  [ ... ]          ;; compatibility alias, same assembler path
+</code></pre>
+<ul>
+<li>The block is a private S1 macro-assembly sublanguage, not ordinary Glon.
+  Its mnemonics, labels and operands are not interned and are not lexically
+  resolved.</li>
+<li>It produces a first-class RAW callable with layout <code>[entry, arity]</code>; it is
+  invoked like a native/closure and may return any result set.</li>
+<li>Limits: 511 tokens, 64 labels, 128 label references, code-space bound
+  <code>R0S1_CODE_LIMIT</code>; exceeding any limit is a parse failure
+  (<code>too_large</code>), with no partial emission.</li>
+<li>RAW is a trusted, unsafe trapdoor. Ordinary programs must not need it.</li>
+</ul>
+<h3 id="16-number-and-string-limits">1.6 Number and string limits</h3>
+<table>
+<thead>
+<tr>
+<th>Literal</th>
+<th>Limit</th>
+<th>On excess</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>integer</td>
+<td>native: about ±2^59 (payload = cell/16); wasm32: about ±2^27</td>
+<td>C signed overflow / truncation; <strong>UNRESOLVED</strong></td>
+</tr>
+<tr>
+<td>string literal</td>
+<td>512 bytes</td>
+<td>parse failure <code>too_large</code></td>
+</tr>
+<tr>
+<td>block</td>
+<td>512 forms (a string costs 2)</td>
+<td>parse failure <code>too_large</code></td>
+</tr>
+<tr>
+<td>token</td>
+<td>63 bytes, silently truncated</td>
+<td>no error; symbol collision possible</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="2-value-model">2. Value model</h2>
+<h3 id="21-representation">2.1 Representation</h3>
+<p><strong>FROZEN.</strong> Every Glon value is one cell:</p>
+<pre><code class="language-text">value = payload * 16 + tag
+</code></pre>
+<p>The low 4 bits are the tag. The implementation is <code>r0_s1.h:17-28</code>.</p>
+<h3 id="22-tags">2.2 Tags</h3>
+<table>
+<thead>
+<tr>
+<th>Tag</th>
+<th>Kind</th>
+<th>Payload</th>
+<th>Equality</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0</td>
+<td>INT</td>
+<td>signed integer payload</td>
+<td>numeric identity</td>
+</tr>
+<tr>
+<td>1</td>
+<td>NONE</td>
+<td>0</td>
+<td>only NONE</td>
+</tr>
+<tr>
+<td>2</td>
+<td>WORD</td>
+<td>symbol id</td>
+<td>symbol id (word family)</td>
+</tr>
+<tr>
+<td>3</td>
+<td>SET-WORD</td>
+<td>symbol id</td>
+<td>symbol id (word family)</td>
+</tr>
+<tr>
+<td>4</td>
+<td>GET-WORD</td>
+<td>symbol id</td>
+<td>symbol id (word family)</td>
+</tr>
+<tr>
+<td>5</td>
+<td>LIT-WORD</td>
+<td>symbol id</td>
+<td>symbol id (word family)</td>
+</tr>
+<tr>
+<td>6</td>
+<td>BLOCK</td>
+<td>16-aligned block address</td>
+<td>cell identity</td>
+</tr>
+<tr>
+<td>7</td>
+<td>CONTEXT</td>
+<td>context address</td>
+<td>cell identity</td>
+</tr>
+<tr>
+<td>8</td>
+<td>CLOSURE</td>
+<td>16-aligned closure address</td>
+<td>cell identity</td>
+</tr>
+<tr>
+<td>9</td>
+<td>NATIVE</td>
+<td>native id</td>
+<td>cell identity</td>
+</tr>
+<tr>
+<td>10</td>
+<td>RAW</td>
+<td>RAW callable address</td>
+<td>cell identity</td>
+</tr>
+<tr>
+<td>11</td>
+<td>USER</td>
+<td>user-object address</td>
+<td>cell identity</td>
+</tr>
+<tr>
+<td>12</td>
+<td>STRING</td>
+<td>16-aligned string payload</td>
+<td>cell identity</td>
+</tr>
+<tr>
+<td>13</td>
+<td>BOUND</td>
+<td><code>depth * 16 + slot</code></td>
+<td>cell identity (internal)</td>
+</tr>
+<tr>
+<td>14</td>
+<td>SIN</td>
+<td>SIN! payload address</td>
+<td>cell identity</td>
+</tr>
+</tbody>
+</table>
+<p>There are no floats, characters, true/false values, vectors, maps, ports or
+dictionaries. Use integers, words, blocks, strings, closures and NONE.</p>
+<h3 id="23-word-family-values">2.3 Word-family values</h3>
+<p><strong>FROZEN.</strong> WORD, SET-WORD, GET-WORD and LIT-WORD compare by symbol id, so
+<code>= 'x 'x</code> is true and a quoted word can dispatch against a plain word. Typical
+programs only observe WORD values: evaluating <code>'x</code> yields WORD <code>x</code>, and
+<code>x:</code> / <code>:x</code> are source forms rather than ordinary data.</p>
+<h3 id="24-blocks">2.4 Blocks</h3>
+<p><strong>FROZEN.</strong></p>
+<ul>
+<li>Loader blocks are permanent (loader heap) and are the source representation.</li>
+<li>Managed blocks come from <code>reduce</code>; they hold evaluated values.</li>
+<li>A block's <code>site_id</code> is static lexical metadata. It is not an activation
+  identity and cannot make a bound block portable.</li>
+<li>A block is not automatically executed. A word bound to a block returns the
+  block; it does not call it.</li>
+</ul>
+<h3 id="25-closures">2.5 Closures</h3>
+<p><strong>FROZEN.</strong> A closure is executable data with layout:</p>
+<pre><code class="language-text">[spec, body, captured-context, func-site-id, depth-bias]
+</code></pre>
+<p>(<code>CLOSURE_SPEC</code>, <code>CLOSURE_BODY</code>, <code>CLOSURE_CTX</code>, <code>CLOSURE_SITE</code>,
+<code>CLOSURE_BIAS</code>, <code>r0_s1.h:389-394</code>).</p>
+<p>A closure captures a real context identity. A captured stack-local context is
+promoted to the managed heap when it escapes. The closure is the portable
+executable form; it remains valid after its creator returns.</p>
+<h3 id="26-strings">2.6 Strings</h3>
+<p><strong>FROZEN.</strong> A STRING! is an immutable sequence of bytes:</p>
+<pre><code class="language-text">[length, byte0, byte1, ...]
+</code></pre>
+<ul>
+<li>One cell per byte, values 0–255.</li>
+<li>No NUL termination, no Unicode semantics, no escape processing in literals.</li>
+<li>Operations return new strings; they never mutate an input.</li>
+<li>String content equality is <code>s/=</code>/<code>str-eq</code>; <code>=</code> is identity.</li>
+<li>String literals are built by <code>mk-string</code>; that word is library/prelude
+  vocabulary, not a core native.</li>
+</ul>
+<h3 id="27-sin-values">2.7 SIN! values</h3>
+<p><strong>FROZEN.</strong> A SIN! is a first-class error <strong>value</strong> with three fields:</p>
+<pre><code class="language-text">[type, id, arg]
+</code></pre>
+<ul>
+<li><code>create-sin</code> constructs it; possession, storage, passing and comparison do
+  not raise.</li>
+<li><code>raise</code> propagates it; <code>judge</code> catches it. A SIN! equals only itself.</li>
+<li>A SIN! is inert data until raised.</li>
+</ul>
+<h3 id="28-other-runtime-values">2.8 Other runtime values</h3>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Meaning</th>
+<th>Ordinary visibility</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>NATIVE</td>
+<td>Built-in native function</td>
+<td>Bound to core words (§4)</td>
+</tr>
+<tr>
+<td>RAW</td>
+<td>First-class S1 callable</td>
+<td>Only through <code>masm</code>/<code>raw</code> libraries</td>
+</tr>
+<tr>
+<td>CONTEXT</td>
+<td>Runtime environment</td>
+<td>Internal; <code>context!</code> only in experimental M3 sessions</td>
+</tr>
+<tr>
+<td>USER</td>
+<td>User/object payload</td>
+<td>Used by runtime internals and experimental M3 vocabulary</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="3-evaluation">3. Evaluation</h2>
+<h3 id="31-prefix-evaluation-and-arity">3.1 Prefix evaluation and arity</h3>
+<p><strong>FROZEN.</strong></p>
+<ul>
+<li>Glon is prefix and fixed-arity. There is no operator precedence and there
+  are no parentheses. The callee consumes the next complete expressions it
+  needs.</li>
+<li><code>+ 1 * 2 3</code> groups as <code>+ 1 (* 2 3)</code> and yields 7.</li>
+<li><code>double double 5</code> groups as <code>double (double 5)</code>.</li>
+<li>Arguments are evaluated <strong>eagerly, left-to-right</strong>, before the call body.</li>
+<li>A call with too few following expressions is unchecked; it may read past the
+  block or consume unrelated forms. A call with extra arguments leaves them
+  for the surrounding expression stream. <strong>UNRESOLVED</strong>; do not rely on it.</li>
+</ul>
+<h3 id="32-program-and-result-sets">3.2 Program and result sets</h3>
+<p><strong>FROZEN.</strong></p>
+<ul>
+<li>Evaluating a block evaluates each form in order. All result sets except the
+  last are discarded; the last result set is returned.</li>
+<li>A result set is zero or more values. Most operations yield exactly one; a
+  function can return several with <code>values</code> or <code>return values [...]</code>.</li>
+<li>The top-level host reports the final result set.</li>
+<li><code>values [1 2]</code> yields two results. As the last expression of a program the
+  host may show both: <code>1 2</code>.</li>
+<li><code>[1 2]</code> as the last expression yields one result: the block itself.</li>
+<li>An empty block yields NONE; a function body that reaches its end yields the
+  last form's result set.</li>
+</ul>
+<h3 id="33-subexpression-dispatch">3.3 Subexpression dispatch</h3>
+<p><strong>FROZEN.</strong> Each form is evaluated by <code>emit_subexpr</code>
+(<code>r0_s1_runtime.c:3569-3745</code>):</p>
+<table>
+<thead>
+<tr>
+<th>Value at cursor</th>
+<th>Action</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>INT, NONE, BLOCK, CONTEXT, CLOSURE, NATIVE, RAW, USER, STRING, SIN</td>
+<td>self-evaluating as a value; if the value is a callable (closure/native/RAW) it is invoked with its arity arguments</td>
+</tr>
+<tr>
+<td>WORD</td>
+<td>dynamic lookup in the context chain; then dispatch the resulting value</td>
+</tr>
+<tr>
+<td>BOUND</td>
+<td>direct lexical slot read; then dispatch the value</td>
+</tr>
+<tr>
+<td>SET-WORD</td>
+<td>evaluate one following expression, assign to the nearest existing binding or create a local, yield the value</td>
+</tr>
+<tr>
+<td>GET-WORD</td>
+<td>look up the binding, yield it <strong>without invoking</strong></td>
+</tr>
+<tr>
+<td>LIT-WORD</td>
+<td>yield a plain WORD with the same symbol id</td>
+</tr>
+<tr>
+<td>BLOCK</td>
+<td>yield the block itself, do not execute it</td>
+</tr>
+<tr>
+<td><code>func</code> keyword</td>
+<td>consume spec and body, build a closure</td>
+</tr>
+<tr>
+<td><code>return</code> keyword</td>
+<td>consume one expression and perform non-local return</td>
+</tr>
+</tbody>
+</table>
+<p>A plain word whose value is a CLOSURE, NATIVE or RAW <strong>auto-invokes</strong>. A plain
+word whose value is a BLOCK, STRING, INT or any other non-callable yields that
+value. Use <code>:word</code> to retrieve a closure/native/RAW without calling it.</p>
+<h3 id="34-word-lookup-and-assignment">3.4 Word lookup and assignment</h3>
+<p><strong>FROZEN.</strong></p>
+<ul>
+<li>A WORD is looked up dynamically through the current context and its lexical
+  parent chain (<code>emit_lookup</code>, <code>r0_s1_runtime.c:2067-2187</code>).</li>
+<li>An unbound WORD is a <strong>machine fail-stop</strong>, not a SIN!: the run halts and
+  cannot be caught by <code>judge</code>.</li>
+<li>A SET-WORD updates the <strong>nearest existing binding</strong> of that symbol in the
+  chain. If no binding exists, it creates a new binding in the current
+  context (a local inside a function, a global at top level).</li>
+<li>A GET-WORD performs the same lookup but never invokes the value.</li>
+<li>Parameter names are bound in the new function's context; inner parameters
+  shadow outer parameters. Function specs are not lexically resolved against
+  an enclosing function.</li>
+<li>Assignment is by value: integers, word ids and pointers are copied. Blocks,
+  strings and contexts are referenced, not copied.</li>
+</ul>
+<p>Lexical consequences:</p>
+<pre><code class="language-glon">x: 10
+f: func [] [ x: + x 1  x ]   ;; updates the global x (nearest existing)
+f                            ;; =&gt; 11
+x                            ;; =&gt; 11
+</code></pre>
+<pre><code class="language-glon">f: func [x] [ x: + x 1  x ]  ;; x is a parameter: updates the parameter
+f 10                         ;; =&gt; 11
+</code></pre>
+<p>A set-word cannot store an activation-dependent block into a foreign context;
+the escape law raises <code>SIN! 'escape 'store</code> before the store (§6.3).</p>
+<h3 id="35-closures-lexical-capture-and-the-guard-of-binding">3.5 Closures, lexical capture and the Guard of Binding</h3>
+<p><strong>FROZEN.</strong></p>
+<ul>
+<li>A literal body (<code>func [x] [ ... ]</code>) is the new function's own scope. It
+  captures the current context with depth bias 0.</li>
+<li>A computed body (<code>func [] :body</code>, <code>func [] block-at rows i</code>) keeps the
+  lexical meaning it had where the body was written:</li>
+<li>a top-level block (site 0) binds to the global context;</li>
+<li>otherwise the nearest live activation of the block's site is the origin;
+    the closure captures it with depth bias +1;</li>
+<li>if the origin activation is dead, the closure is marked with a sentinel
+    site and any BOUND reference in it fails loudly. It never silently binds
+    to an unrelated activation.</li>
+<li>A closure made from the running activation's own block resolves against
+  that activation. A closure made from a factory closure's block resolves
+  against the origin the factory captured.</li>
+<li>A captured stack-local context is promoted to the managed heap on escape.
+  Promotion redirects the activation onto the managed copy, so the activation
+  and all its closures share one context and mutations are visible both ways.</li>
+</ul>
+<p><strong>Known limitation (FROZEN in the laws):</strong> under same-site recursion, two live
+activations share <code>FRAME_SITE</code>, so a travelling bare bound block resolves
+against the innermost matching activation. Use a closure when
+activation-specific capture is required.</p>
+<h3 id="36-return">3.6 <code>return</code></h3>
+<p><strong>FROZEN.</strong></p>
+<pre><code class="language-glon">return &lt;expression&gt;
+</code></pre>
+<ul>
+<li>Evaluates one expression and returns its result set from the <strong>nearest
+  enclosing function activation</strong>, not from a helper, <code>do</code> block or <code>judge</code>.</li>
+<li>It abandons intermediate activations without running their epilogues.</li>
+<li><code>return values []</code> returns zero results; <code>return values [a b]</code> returns two.</li>
+<li><code>return</code> outside any function is a machine fail-stop.</li>
+<li><code>return</code> inside a <code>judge</code> body unwinds through the judge to the enclosing
+  function.</li>
+<li><code>return</code> inside a CASE action returns from that action, because each CASE
+  action is itself a zero-argument closure.</li>
+</ul>
+<h3 id="37-do">3.7 <code>do</code></h3>
+<p><strong>FROZEN for block input; UNRESOLVED for other input.</strong></p>
+<pre><code class="language-glon">do &lt;block&gt;
+</code></pre>
+<ul>
+<li>Evaluates the block in the <strong>current context</strong> and current activation.</li>
+<li>Saves and restores the current cursor/end/block pointers; it does not create
+  a context.</li>
+<li>Returns the block's final result set.</li>
+<li>A block passed into another function and <code>do</code>ne there resolves plain words
+  dynamically in the callee's context. Caller blocks that must retain lexical
+  meaning should be turned into closures.</li>
+<li><code>do []</code> yields NONE.</li>
+<li>The implementation does <strong>not</strong> type-check the argument before treating it
+  as a block. A non-block argument is unchecked: its untagged payload is used
+  as a block address, so it may read unrelated memory, return a nonsensical
+  value, or halt. <strong>UNRESOLVED</strong>; the contract requires a block.</li>
+</ul>
+<h3 id="38-values-reduce-either-invoke">3.8 <code>values</code>, <code>reduce</code>, <code>either</code>, <code>invoke</code></h3>
+<h4 id="values"><code>values</code></h4>
+<p><strong>FROZEN.</strong></p>
+<pre><code class="language-glon">values &lt;block&gt;
+</code></pre>
+<ul>
+<li>Evaluates every form in the block and returns <strong>all</strong> results, preserving
+  order.</li>
+<li>Each source expression must reduce to exactly one value. A form that yields
+  zero or several results makes <code>values</code> fail-stop (<code>emit_values</code>,
+  <code>r0_s1_runtime.c:2841-2887</code>). Therefore <code>values [values [1 2]]</code> halts.</li>
+<li><code>values []</code> yields zero results.</li>
+<li>A managed block is not executable; <code>values</code> of a managed block is a
+  fail-stop.</li>
+</ul>
+<h4 id="reduce"><code>reduce</code></h4>
+<p><strong>FROZEN.</strong></p>
+<pre><code class="language-glon">reduce &lt;source-block&gt;
+</code></pre>
+<ul>
+<li>Evaluates each source expression left-to-right, reduces each to <strong>one</strong>
+  value, and returns a newly allocated managed block of those values.</li>
+<li>The source must be a block and must not be a managed block (the runtime
+  rejects managed source blocks).</li>
+<li>A multi-result argument expression is collapsed to its <strong>first</strong> result by
+  the internal <code>reduce</code> step. For example <code>reduce [values [1 2] 3]</code> yields
+  <code>[1 3]</code>. This collapse is IMPLEMENTED and is not stated in the Alpha laws.</li>
+<li><code>reduce []</code> yields an empty managed block.</li>
+</ul>
+<h4 id="either"><code>either</code></h4>
+<p><strong>FROZEN for block branches; UNRESOLVED for other input.</strong></p>
+<pre><code class="language-glon">either &lt;condition&gt; &lt;then-block&gt; &lt;else-block&gt;
+</code></pre>
+<ul>
+<li>Evaluates condition once, then exactly one branch block.</li>
+<li>Falsey values are NONE and integer 0. Everything else is truthy.</li>
+<li>Returns the taken branch's result set.</li>
+<li>Both branches must be blocks. The implementation does not type-check them;
+  a non-block branch is used as a block address and is unchecked.
+  <strong>UNRESOLVED</strong>.</li>
+</ul>
+<h4 id="invoke"><code>invoke</code></h4>
+<p><strong>FROZEN.</strong></p>
+<pre><code class="language-glon">invoke &lt;closure-producing-expression&gt;
+</code></pre>
+<ul>
+<li>Evaluates exactly one expression to obtain a CLOSURE value, then invokes it.
+  The closure consumes its own arity arguments from the same caller expression
+  stream.</li>
+<li>Use this for closures obtained from <code>:word</code>, <code>block-at</code>, <code>select</code>, or a
+  factory call.</li>
+<li>A non-closure result is a machine fail-stop, not a catchable SIN!.</li>
+</ul>
+<h3 id="39-optional-control-vocabulary">3.9 Optional control vocabulary</h3>
+<p><code>case</code> and <code>parse</code> are ordinary Glon libraries, not natives. See §5.</p>
+<hr>
+<h2 id="4-core-vocabulary">4. Core vocabulary</h2>
+<p><strong>FROZEN</strong> as bound by <code>r0_s1_init</code> unless marked otherwise
+(<code>r0_s1_runtime.c:3841-3876</code>). Arity is the number of following expressions
+consumed.</p>
+<h3 id="40-vocabulary-provenance">4.0 Vocabulary provenance</h3>
+<p>No ordinary Glon word is itself one of the seven frozen S1 primitives. The S1
+instruction set is reachable only through <code>masm</code>/<code>raw</code>. The provenance of the
+words a program can use is:</p>
+<table>
+<thead>
+<tr>
+<th>Word or name</th>
+<th>Provenance</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>LIT</code>, <code>DUP</code>, <code>DROP</code>, <code>@</code>, <code>!</code>, <code>0BRANCH</code>, <code>HOST</code></td>
+<td><strong>FROZEN S1 instruction set</strong></td>
+<td>Not ordinary Glon vocabulary; used only inside <code>masm</code>/<code>raw</code> blocks (and as assembler mnemonics).</td>
+</tr>
+<tr>
+<td><code>+</code>, <code>-</code>, <code>*</code>, <code>/</code>, <code>=</code>, <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>, <code>&gt;=</code>, <code>print</code></td>
+<td><strong>R0 native words over frozen S1 <code>HOST</code></strong></td>
+<td>The evaluator emits calls to <code>HOST_ADD</code>/<code>HOST_MUL</code>/<code>HOST_EQ</code>/<code>HOST_PRINT</code> etc. (<code>s1.c:134-160</code>).</td>
+</tr>
+<tr>
+<td><code>values</code>, <code>either</code>, <code>do</code>, <code>invoke</code>, <code>reduce</code>, <code>create-sin</code>, <code>sin?</code>, <code>sin-type</code>, <code>sin-id</code>, <code>sin-arg</code>, <code>raise</code>, <code>judge</code></td>
+<td><strong>R0 runtime natives</strong></td>
+<td>Emitted above S1; not S1 primitives.</td>
+</tr>
+<tr>
+<td><code>func</code>, <code>return</code></td>
+<td><strong>Evaluator keywords</strong></td>
+<td>Reserved words in value position; not S1 operations.</td>
+</tr>
+<tr>
+<td><code>masm</code>, <code>raw</code></td>
+<td><strong>Reader form + S1 trapdoor</strong></td>
+<td><code>masm</code>/<code>raw</code> exposes S1 instructions and the symbolic ABI; it is not portable application vocabulary.</td>
+</tr>
+<tr>
+<td><code>mk-string</code>, <code>str-eq</code>, <code>get</code>, <code>lambda</code>, <code>does</code>, <code>block-len</code>, <code>block-at</code>, <code>select</code>, <code>select-at</code></td>
+<td><strong>Glon library/prelude</strong></td>
+<td><code>jupyter/prelude.glon</code>, <code>demo/shop/bootstrap.glon</code>, <code>demo/shop/common.glon</code>.</td>
+</tr>
+<tr>
+<td><code>case</code>, <code>parse</code></td>
+<td><strong>Glon library</strong></td>
+<td><code>demo/shop/case.glon</code>, <code>demo/shop/parse.glon</code>.</td>
+</tr>
+<tr>
+<td><code>s/+</code>, <code>s/=</code>, <code>s/length</code>, <code>s/print</code>, <code>s/at</code>, <code>s/slice</code>, <code>s/span</code>, <code>s/scan-set</code>, <code>s/from-int</code></td>
+<td><strong>Glon library</strong></td>
+<td><code>strings.glon</code>, <code>strings-ext.glon</code>.</td>
+</tr>
+<tr>
+<td><code>spawn</code>, <code>yield</code>, <code>run-tasks</code>, <code>reset-tasks</code></td>
+<td><strong>Glon library</strong></td>
+<td><code>demo/shop/demos/tuple-space.glon</code> and equivalent M1 libraries.</td>
+</tr>
+<tr>
+<td><code>host_print</code>, <code>host_set_text</code>, <code>host_set_html</code>, <code>host_canvas_script</code>, <code>host_call</code></td>
+<td><strong>Host imports</strong></td>
+<td>WASM host boundary; not Glon vocabulary.</td>
+</tr>
+<tr>
+<td><code>glon_alloc</code>, <code>glon_init</code>, <code>glon_load</code>, <code>glon_call</code>, <code>glon_route</code>, <code>glon_event</code>, <code>glon_event_value</code>, <code>glon_event_bytes</code>, <code>glon_run</code>, <code>glon_result_ptr</code>, <code>glon_result_len</code></td>
+<td><strong>Host exports</strong></td>
+<td>WASM host boundary; not Glon vocabulary.</td>
+</tr>
+<tr>
+<td><code>current-route</code>, <code>current-event</code>, <code>current-value</code>, <code>route</code>, <code>do-event</code></td>
+<td><strong>Host/application convention</strong></td>
+<td>G1A dispatch convention; <code>route</code>/<code>do-event</code> are application-defined blocks.</td>
+</tr>
+</tbody>
+</table>
+<p><code>GLON-HOST-ABI.md</code> §1 restates this split for host authors.</p>
+<h3 id="41-native-operations">4.1 Native operations</h3>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Arity</th>
+<th>Result</th>
+<th>Definition</th>
+<th>Failure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>+</code></td>
+<td>2</td>
+<td>one INT</td>
+<td>integer addition</td>
+<td>non-integer operands UNRESOLVED; overflow UNRESOLVED</td>
+</tr>
+<tr>
+<td><code>-</code></td>
+<td>2</td>
+<td>one INT</td>
+<td>integer subtraction</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>*</code></td>
+<td>2</td>
+<td>one INT</td>
+<td>integer multiplication</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>/</code></td>
+<td>2</td>
+<td>one INT</td>
+<td>truncating integer division</td>
+<td>divide by zero UNRESOLVED</td>
+</tr>
+<tr>
+<td><code>=</code></td>
+<td>2</td>
+<td>one INT (0 or 1)</td>
+<td>type-safe identity/equality (§4.2)</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>&lt;</code></td>
+<td>2</td>
+<td>0/1</td>
+<td>integer less-than</td>
+<td>non-integer UNRESOLVED</td>
+</tr>
+<tr>
+<td><code>&gt;</code></td>
+<td>2</td>
+<td>0/1</td>
+<td>integer greater-than</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>&lt;=</code></td>
+<td>2</td>
+<td>0/1</td>
+<td>integer less-or-equal</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>&gt;=</code></td>
+<td>2</td>
+<td>0/1</td>
+<td>integer greater-or-equal</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>print</code></td>
+<td>1</td>
+<td>zero results</td>
+<td>writes <code>int_val(arg)</code> and a newline</td>
+<td>non-integer prints a payload-derived number; not a contract (<strong>UNRESOLVED</strong>)</td>
+</tr>
+<tr>
+<td><code>values</code></td>
+<td>1</td>
+<td>all values</td>
+<td>§3.8</td>
+<td>each form must yield exactly one value</td>
+</tr>
+<tr>
+<td><code>either</code></td>
+<td>3</td>
+<td>branch result</td>
+<td>§3.8</td>
+<td>non-block branch unchecked</td>
+</tr>
+<tr>
+<td><code>do</code></td>
+<td>1</td>
+<td>block result</td>
+<td>§3.7</td>
+<td>non-block unchecked</td>
+</tr>
+<tr>
+<td><code>invoke</code></td>
+<td>1 expression</td>
+<td>closure result</td>
+<td>§3.8</td>
+<td>non-closure is a machine fail-stop</td>
+</tr>
+<tr>
+<td><code>reduce</code></td>
+<td>1</td>
+<td>managed block</td>
+<td>§3.8</td>
+<td>non-block/managed source is a fail-stop</td>
+</tr>
+<tr>
+<td><code>create-sin</code></td>
+<td>3</td>
+<td>one SIN!</td>
+<td>builds <code>[type id arg]</code></td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>sin?</code></td>
+<td>1</td>
+<td>0/1</td>
+<td>1 iff tag 14</td>
+<td>none</td>
+</tr>
+<tr>
+<td><code>sin-type</code></td>
+<td>1</td>
+<td>field</td>
+<td>first SIN! field</td>
+<td>non-SIN raises <code>type/sin-field</code> (catchable)</td>
+</tr>
+<tr>
+<td><code>sin-id</code></td>
+<td>1</td>
+<td>field</td>
+<td>second field</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>sin-arg</code></td>
+<td>1</td>
+<td>field</td>
+<td>third field</td>
+<td>same</td>
+</tr>
+<tr>
+<td><code>raise</code></td>
+<td>1</td>
+<td>does not return</td>
+<td>propagate SIN!</td>
+<td>non-SIN raises <code>type/raise</code></td>
+</tr>
+<tr>
+<td><code>judge</code></td>
+<td>1</td>
+<td>block results or SIN!</td>
+<td>runs block in place; catches raises</td>
+<td>non-block raises <code>type/judge</code></td>
+</tr>
+</tbody>
+</table>
+<p>The implementation of arithmetic uses <code>int_val</code> (<code>payload / 16</code>) on both
+operands without a tag check (<code>emit_native</code>, <code>r0_s1_runtime.c:3089-3260</code>).
+The contract is arithmetic on integers. Behaviour on non-integers is
+implementation-defined and must not be relied on.</p>
+<h3 id="42-equality">4.2 Equality (<code>=</code>)</h3>
+<p><strong>FROZEN.</strong></p>
+<ul>
+<li>WORD, SET-WORD, GET-WORD and LIT-WORD compare by symbol id.</li>
+<li>Every other tag compares by full tagged cell identity (raw cell equality).</li>
+<li>Therefore:</li>
+<li><code>= none 0</code> is <code>0</code>;</li>
+<li><code>= none none</code> is <code>1</code>;</li>
+<li><code>= [1] [1]</code> is <code>0</code> (distinct blocks);</li>
+<li><code>= "a" "a"</code> is <code>0</code> unless both words evaluate to the same string object;</li>
+<li>string content equality is <code>s/=</code> or <code>str-eq</code>;</li>
+<li><code>= 1 1</code> is <code>1</code>;</li>
+<li><code>= 'x 'x</code> is <code>1</code> (word family).</li>
+</ul>
+<h3 id="43-keywords">4.3 Keywords</h3>
+<table>
+<thead>
+<tr>
+<th>Form</th>
+<th>Meaning</th>
+<th>Failure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>func</code></td>
+<td>closure constructor (§1.5, §3.5)</td>
+<td>non-block body: machine fail-stop</td>
+</tr>
+<tr>
+<td><code>return</code></td>
+<td>definitional return (§3.6)</td>
+<td>outside a function: machine fail-stop</td>
+</tr>
+<tr>
+<td><code>masm [...]</code>, <code>masm N [...]</code></td>
+<td>assemble RAW callable</td>
+<td>parse failure on bad/large block</td>
+</tr>
+<tr>
+<td><code>raw [...]</code>, <code>raw N [...]</code></td>
+<td>alias of <code>masm</code></td>
+<td>same</td>
+</tr>
+</tbody>
+</table>
+<h3 id="44-sin-and-propagation">4.4 SIN! and propagation</h3>
+<p><strong>FROZEN.</strong></p>
+<p>A SIN! is a value; propagation is separate control flow.</p>
+<pre><code class="language-glon">e: create-sin 'demo 'oops 7
+sin? e          ;; =&gt; 1
+sin-type e      ;; =&gt; demo
+sin-id e        ;; =&gt; oops
+sin-arg e       ;; =&gt; 7
+judge [ raise e ] ;; =&gt; #[SIN! demo oops 7]
+</code></pre>
+<ul>
+<li><code>raise err</code> abandons the current operation and unwinds to the nearest
+  <code>judge</code> <strong>in the same task</strong>.</li>
+<li><code>judge block</code> runs the block in the current activation/context. If it
+  completes, <code>judge</code> returns its result set; if anything raises, <code>judge</code>
+  returns the SIN! value and execution continues after the <code>judge</code>.</li>
+<li>Nested judges: the nearest catches.</li>
+<li>With no judge, the run ends as an uncaught SIN!; the host can read its
+  fields.</li>
+<li>Judges are per task; a main-world judge does not catch a task's raise.</li>
+<li>Runtime checks raise SIN!s:</li>
+<li>non-SIN! passed to <code>sin-type</code>/<code>sin-id</code>/<code>sin-arg</code>: <code>type/sin-field</code>;</li>
+<li>non-SIN! passed to <code>raise</code>: <code>type/raise</code>;</li>
+<li>non-block passed to <code>judge</code>: <code>type/judge</code>;</li>
+<li>escape-law violations: <code>escape/&lt;boundary&gt;</code> where boundary is <code>return</code>,
+    <code>argument</code>, <code>store</code>, <code>capture</code> or <code>transport</code>, and arg is the offending
+    block's site id.</li>
+<li>Machine-integrity failures are not SIN!s and cannot be judged: out of
+  memory, return-stack exhaustion, data-stack exhaustion, <code>CONTEXT_FULL</code>,
+  GC worklist full, unbound word, non-closure <code>invoke</code>, non-block <code>func</code> body.</li>
+</ul>
+<hr>
+<h2 id="5-standard-libraries">5. Standard libraries</h2>
+<p>These are ordinary Glon source, loaded by hosts or applications. They are
+<strong>IMPLEMENTED</strong>, not frozen primitives. A bare runtime has only §4.</p>
+<h3 id="51-jupyter-prelude-demoshopbootstrapglon">5.1 Jupyter prelude / <code>demo/shop/bootstrap.glon</code></h3>
+<p>The same core definitions are shipped as <code>jupyter/prelude.glon</code> and copied
+into the shop bootstrap (<code>demo/shop/bootstrap.glon</code>). Minimal definitions:</p>
+<table>
+<thead>
+<tr>
+<th>Word</th>
+<th>Signature</th>
+<th>Semantics</th>
+<th>Failure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mk-string</code></td>
+<td><code>[byte-int ...] -&gt; STRING!</code></td>
+<td>copy tagged byte integers into a new managed string</td>
+<td>unchecked if the block is malformed</td>
+</tr>
+<tr>
+<td><code>str-eq</code></td>
+<td><code>STRING! STRING! -&gt; 0/1</code></td>
+<td>byte-content equality; <code>s/=</code> is the same word</td>
+<td>non-string raises <code>type/s/=</code> with the offending value</td>
+</tr>
+<tr>
+<td><code>get</code></td>
+<td><code>WORD -&gt; value</code></td>
+<td>raw lookup without invocation</td>
+<td>unbound word fail-stops in lookup</td>
+</tr>
+<tr>
+<td><code>lambda</code></td>
+<td><code>spec body -&gt; CLOSURE</code></td>
+<td><code>func :spec :body</code></td>
+<td>same as <code>func</code></td>
+</tr>
+<tr>
+<td><code>does</code></td>
+<td><code>body -&gt; CLOSURE</code></td>
+<td><code>lambda [] body</code></td>
+<td>same as <code>func</code></td>
+</tr>
+<tr>
+<td><code>block-len</code></td>
+<td><code>BLOCK -&gt; INT</code></td>
+<td>number of elements</td>
+<td>unchecked</td>
+</tr>
+<tr>
+<td><code>block-at</code></td>
+<td><code>BLOCK INT -&gt; value</code></td>
+<td>0-based element access</td>
+<td>unchecked; bad index reads unrelated memory</td>
+</tr>
+<tr>
+<td><code>select</code></td>
+<td><code>rows key -&gt; row or NONE</code></td>
+<td>first row whose first element <code>=</code> key</td>
+<td>unchecked block shape</td>
+</tr>
+<tr>
+<td><code>select-at</code></td>
+<td>helper</td>
+<td>recursive search</td>
+<td>unchecked</td>
+</tr>
+</tbody>
+</table>
+<p><code>mk-string</code> is required by every string literal. A runtime with only the core
+natives cannot evaluate <code>"abc"</code>: the reader expands it to <code>mk-string [...]</code>,
+and the unbound <code>mk-string</code> word is a machine fail-stop.</p>
+<h3 id="52-case-demoshopcaseglon">5.2 <code>case</code> (<code>demo/shop/case.glon</code>)</h3>
+<p><strong>IMPLEMENTED.</strong></p>
+<pre><code class="language-glon">case [
+    [condition-1] [action-1]
+    [condition-2] [action-2]
+    ...
+]
+</code></pre>
+<ul>
+<li>Conditions are blocks, not inline expressions.</li>
+<li>First truthy condition's action is run; later conditions/actions are not
+  evaluated. <code>case</code> returns the action's result.</li>
+<li>No match returns NONE.</li>
+<li><code>[1]</code> is a catch-all condition.</li>
+<li>Conditions/actions run as zero-argument closures bound to their lexical
+  origin, so words and assignments resolve as if written in the enclosing
+  function.</li>
+<li><code>return</code> inside an action returns from that action (and CASE yields the
+  value), not from the enclosing function.</li>
+<li>A condition without an action, a non-block clause, or a dead-origin clause
+  fails loudly (machine fail-stop).</li>
+<li>Each clause allocates a closure; recursion through CASE-using functions is
+  bounded by promoted contexts (about 25 levels with the current heap).</li>
+</ul>
+<h3 id="53-parse-demoshopparseglon">5.3 <code>parse</code> (<code>demo/shop/parse.glon</code>)</h3>
+<p><strong>IMPLEMENTED.</strong></p>
+<pre><code class="language-glon">parse &lt;input-block&gt; &lt;rules-block&gt;   ;; =&gt; 1 or 0
+</code></pre>
+<ul>
+<li>Operators are bare words: <code>skip</code>, <code>alt</code>, <code>opt</code>, <code>some</code>, <code>any</code>.</li>
+<li><code>alt</code> consumes two following subrule blocks: <code>alt [A] [B]</code>.</li>
+<li><code>opt</code>, <code>some</code>, <code>any</code> consume one following subrule block.</li>
+<li>Any other rule value is a literal matched with <code>=</code> against the next input
+  value.</li>
+<li>Full-match law: true only if the rules succeed <strong>and consume the entire
+  input</strong>.</li>
+<li>Repetition has a zero-width progress guard: a repeat that succeeds without
+  advancing ends rather than looping forever.</li>
+<li>Internal failure sentinel is <code>-1</code>; positions are non-negative.</li>
+<li>No actions, captures, string parsing, <code>into</code>, or Rebol <code>/ALL</code>.</li>
+</ul>
+<h3 id="54-string-library-demoshopstringsglon">5.4 String library (<code>demo/shop/strings.glon</code>)</h3>
+<p><strong>IMPLEMENTED.</strong> All operations are immutable and return new strings. Wrong
+argument types raise <code>SIN! 'type &lt;operation-name&gt; &lt;offending-value&gt;</code>; both
+arguments are evaluated before the check, so the first non-string is reported.</p>
+<table>
+<thead>
+<tr>
+<th>Word</th>
+<th>Signature</th>
+<th>Semantics</th>
+<th>Limits/errors</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>s/+</code></td>
+<td><code>STRING! STRING! -&gt; STRING!</code></td>
+<td>concatenate bytes</td>
+<td>non-string: <code>type/s/+</code></td>
+</tr>
+<tr>
+<td><code>s/=</code></td>
+<td><code>STRING! STRING! -&gt; 0/1</code></td>
+<td>byte equality; same word as <code>str-eq</code></td>
+<td>non-string: <code>type/s/=</code></td>
+</tr>
+<tr>
+<td><code>s/length</code></td>
+<td><code>STRING! -&gt; INT</code></td>
+<td>number of bytes</td>
+<td>non-string: <code>type/s/length</code></td>
+</tr>
+<tr>
+<td><code>s/print</code></td>
+<td><code>STRING! -&gt; no value</code></td>
+<td>write bytes then newline</td>
+<td>non-string: <code>type/s/print</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="55-optional-string-extension-demoshopstrings-extglon">5.5 Optional string extension (<code>demo/shop/strings-ext.glon</code>)</h3>
+<p><strong>IMPLEMENTED optional.</strong> Loaded after <code>strings.glon</code> only by sessions that
+need it. Indices are 0-based byte offsets; ranges are half-open. No negative
+indices and no clamping for extraction.</p>
+<table>
+<thead>
+<tr>
+<th>Word</th>
+<th>Signature</th>
+<th>Semantics</th>
+<th>Failure</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>s/at</code></td>
+<td><code>STRING! INT -&gt; INT or NONE</code></td>
+<td>byte at index, or NONE outside <code>[0, length)</code></td>
+<td>non-string/non-int: <code>type/s/at</code></td>
+</tr>
+<tr>
+<td><code>s/slice</code></td>
+<td><code>STRING! INT INT -&gt; STRING!</code></td>
+<td><code>n</code> bytes from <code>start</code>; requires <code>0 &lt;= start</code>, <code>0 &lt;= n</code>, <code>start+n &lt;= length</code></td>
+<td>bad range: <code>range/s/slice</code> arg <code>[start n]</code></td>
+</tr>
+<tr>
+<td><code>s/span</code></td>
+<td><code>STRING! INT INT -&gt; STRING!</code></td>
+<td>bytes in <code>[start, end)</code>; requires <code>0 &lt;= start &lt;= end &lt;= length</code></td>
+<td>bad range: <code>range/s/span</code> arg <code>[start end]</code></td>
+</tr>
+<tr>
+<td><code>s/scan-set</code></td>
+<td><code>STRING! INT STRING! -&gt; INT</code></td>
+<td>first index <code>&gt;= i</code> whose byte is not in the set; <code>i</code> clamped to <code>[0, length]</code>; returns length if none</td>
+<td>wrong type: <code>type/s/scan-set</code></td>
+</tr>
+<tr>
+<td><code>s/from-int</code></td>
+<td><code>INT -&gt; STRING!</code></td>
+<td>decimal text</td>
+<td>non-int: <code>type/s/from-int</code></td>
+</tr>
+</tbody>
+</table>
+<p>UTF-8 is not a language concern: a multi-byte character is several byte
+indices, and slicing may split it.</p>
+<h3 id="56-tasks-demoshopdemostuple-spaceglon">5.6 Tasks (<code>demo/shop/demos/tuple-space.glon</code>)</h3>
+<p><strong>IMPLEMENTED optional; experimental in purpose.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Word</th>
+<th>Signature</th>
+<th>Semantics</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>spawn</code></td>
+<td><code>body-block -&gt; INT</code></td>
+<td>create a cooperative task; return a task handle (<code>mk_int(record address)</code>, an implementation-defined integer), or -1 if full</td>
+</tr>
+<tr>
+<td><code>yield</code></td>
+<td>none</td>
+<td>save this task's machine state and resume the scheduler</td>
+</tr>
+<tr>
+<td><code>run-tasks</code></td>
+<td>none</td>
+<td>deterministic round-robin until no runnable task remains</td>
+</tr>
+<tr>
+<td><code>reset-tasks</code></td>
+<td>none</td>
+<td>mark all task slots empty and reset the cursor</td>
+</tr>
+</tbody>
+</table>
+<ul>
+<li>At most 3 tasks (<code>M1_MAX_TASKS</code>), fixed task arenas.</li>
+<li>Tasks are cooperative: they run only until <code>yield</code> or completion, and are
+  resumed round-robin. There is no pre-emption, multicore or distribution.</li>
+<li><code>spawn</code> checks the still-tagged body for activation-dependence and raises
+  <code>SIN! 'escape 'transport</code> before creating a task if it would escape.</li>
+<li>Judges are per task; errors do not cross task boundaries.</li>
+</ul>
+<hr>
+<h2 id="6-errors-and-failure-model">6. Errors and failure model</h2>
+<h3 id="61-two-failure-classes">6.1 Two failure classes</h3>
+<p><strong>FROZEN.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Can <code>judge</code> catch?</th>
+<th>Examples</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SIN! propagation</td>
+<td>yes, in the same task</td>
+<td><code>raise</code>, escape-law violations, <code>sin-field</code>, <code>judge</code> type</td>
+</tr>
+<tr>
+<td>Machine fail-stop</td>
+<td>no</td>
+<td>unbound word, out of memory, stack exhaustion, <code>CONTEXT_FULL</code>, GC worklist, non-closure <code>invoke</code>, non-block <code>func</code> body, <code>return</code> outside a function</td>
+</tr>
+</tbody>
+</table>
+<p>A run that ends in a machine fail-stop is not clean. The host reports a halt,
+not a SIN!.</p>
+<h3 id="62-parse-and-load-failures">6.2 Parse and load failures</h3>
+<p><strong>FROZEN categories; IMPLEMENTED mapping.</strong></p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Meaning</th>
+<th>Host detail</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>syntax</td>
+<td>malformed source, unterminated block/string, bare <code>]</code>, missing <code>func</code> operand, bad masm</td>
+<td><code>syntax</code></td>
+</tr>
+<tr>
+<td><code>too_large</code></td>
+<td>block/string over 512, masm block/labels/code over limit</td>
+<td><code>too_large</code></td>
+</tr>
+<tr>
+<td><code>symbol_table_full</code></td>
+<td>more than 512 distinct symbols</td>
+<td><code>symbol_table_full</code></td>
+</tr>
+<tr>
+<td><code>loader_exhausted</code></td>
+<td>loader heap cannot hold this source</td>
+<td><code>loader_exhausted</code></td>
+</tr>
+<tr>
+<td><code>site_table_full</code></td>
+<td>more than 640 function sites</td>
+<td><code>site_table_full</code></td>
+</tr>
+</tbody>
+</table>
+<p>A failed parse is rolled back completely: loader heap, symbol table and site
+counter return to their prior state, and earlier session definitions remain
+usable (<code>r0_s1_parse</code>, <code>r0_s1_runtime.c:4030-4064</code>).</p>
+<h3 id="63-escape-time-binding-law">6.3 Escape-time binding law</h3>
+<p><strong>FROZEN.</strong> An activation-dependent block may be consumed or closed over while
+its origin activation is live, but must not escape it. A closure is the
+portable executable form. Enforcement points:</p>
+<table>
+<thead>
+<tr>
+<th>Boundary</th>
+<th>Check</th>
+<th>Raise</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>frame exit</td>
+<td>a frame must not return a dependent block of its own site or an ancestor site</td>
+<td><code>escape/return</code></td>
+</tr>
+<tr>
+<td>argument bind</td>
+<td>a dependent block of site S must not be bound as an argument of a closure whose site is S</td>
+<td><code>escape/argument</code></td>
+</tr>
+<tr>
+<td>context store</td>
+<td>a set-word must not store a foreign-site dependent block</td>
+<td><code>escape/store</code></td>
+</tr>
+<tr>
+<td>context capture/promotion</td>
+<td>a context must not be captured while it holds a foreign-site dependent block</td>
+<td><code>escape/capture</code></td>
+</tr>
+<tr>
+<td>task transport</td>
+<td>a task body must not be activation-dependent</td>
+<td><code>escape/transport</code></td>
+</tr>
+</tbody>
+</table>
+<p>The raise's <code>arg</code> is the offending block's decoded site id. The violating
+operation is abandoned before it completes; a judge never receives the illegal
+value.</p>
+<h3 id="64-runtime-accessor-errors">6.4 Runtime accessor errors</h3>
+<p><code>sin-type</code>, <code>sin-id</code>, <code>sin-arg</code> on a non-SIN raise <code>SIN! 'type 'sin-field</code> with
+the offending value as arg. <code>raise</code> on a non-SIN raises <code>SIN! 'type 'raise</code> with
+that value. <code>judge</code> on a non-block raises <code>SIN! 'type 'judge</code> with that value.</p>
+<hr>
+<h2 id="7-state-memory-and-limits">7. State, memory and limits</h2>
+<p><strong>FROZEN memory model; IMPLEMENTED capacities.</strong> Capacities are implementation
+limits, not language semantics. Raising one is a separate, approved scaling
+experiment.</p>
+<h3 id="71-contexts">7.1 Contexts</h3>
+<table>
+<thead>
+<tr>
+<th>Context</th>
+<th>Capacity</th>
+<th>On adding a new binding when full</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>global</td>
+<td>256 bindings</td>
+<td><code>CONTEXT_FULL</code> fail-stop before any write</td>
+</tr>
+<tr>
+<td>each function activation</td>
+<td>16 bindings</td>
+<td><code>CONTEXT_FULL</code> fail-stop before any write</td>
+</tr>
+</tbody>
+</table>
+<p>Existing bindings can still be updated when a context is full; only a new
+binding is refused. The rejected write leaves existing state uncorrupted.</p>
+<h3 id="72-memory-map-64k-reference-configuration">7.2 Memory map (64K reference configuration)</h3>
+<table>
+<thead>
+<tr>
+<th>Region</th>
+<th>Cells</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>registers/scratch</td>
+<td>0–255</td>
+<td>memory-mapped <code>IP/SP/RP/HP</code></td>
+</tr>
+<tr>
+<td>emitted runtime code</td>
+<td>256–~12,861</td>
+<td>grows with natives and masm libraries</td>
+</tr>
+<tr>
+<td>main data stack</td>
+<td>grows down from 16,384</td>
+<td>guarded</td>
+</tr>
+<tr>
+<td>main return stack</td>
+<td>grows down from 24,576</td>
+<td>frames, stack-local contexts, continuations</td>
+</tr>
+<tr>
+<td>runtime state</td>
+<td>24,576–32,768</td>
+<td><code>RV_*</code>, M1 scheduler, GC state, output buffers</td>
+</tr>
+<tr>
+<td>managed heap</td>
+<td>32,768–40,000 (7,232 cells)</td>
+<td>non-moving mark/sweep</td>
+</tr>
+<tr>
+<td>loader heap</td>
+<td>40,000–54,800 (14,800 cells)</td>
+<td>permanent; never swept</td>
+</tr>
+<tr>
+<td>task arenas</td>
+<td>54,800–65,000</td>
+<td>3 tasks</td>
+</tr>
+<tr>
+<td>task table</td>
+<td>65,000–65,536</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>The order and ranges are implementation details, not a portable language
+contract. The 65,536-cell map is deliberate.</p>
+<h3 id="73-resource-limits">7.3 Resource limits</h3>
+<table>
+<thead>
+<tr>
+<th>Resource</th>
+<th>Limit</th>
+<th>Behaviour</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>managed heap</td>
+<td>7,232 cells; one cell per string byte</td>
+<td>out-of-memory fail-stop; fragmentation can fail a large allocation with total free space present</td>
+</tr>
+<tr>
+<td>smallest managed object</td>
+<td>32 cells</td>
+<td>—</td>
+</tr>
+<tr>
+<td>nested Glon calls</td>
+<td>~84 plain, fewer with wider frames</td>
+<td>return-stack exhaustion fail-stop</td>
+</tr>
+<tr>
+<td>block/string literal</td>
+<td>512 values / 512 bytes</td>
+<td>parse failure <code>too_large</code></td>
+</tr>
+<tr>
+<td>symbols</td>
+<td>512 per session</td>
+<td>parse failure <code>symbol_table_full</code></td>
+</tr>
+<tr>
+<td>function sites</td>
+<td>640 per session</td>
+<td>parse failure <code>site_table_full</code></td>
+</tr>
+<tr>
+<td>loader heap</td>
+<td>~14,800 cells</td>
+<td>parse failure <code>loader_exhausted</code></td>
+</tr>
+<tr>
+<td>masm code</td>
+<td><code>R0S1_CODE_LIMIT</code> = 16,128</td>
+<td>parse failure <code>too_large</code></td>
+</tr>
+<tr>
+<td>masm block</td>
+<td>511 tokens, 64 labels, 128 refs</td>
+<td>parse failure <code>too_large</code></td>
+</tr>
+<tr>
+<td>data stack</td>
+<td>code end + guard, or task base + guard</td>
+<td><code>DS_EXHAUSTED</code>/<code>DS_UNDERFLOW</code> halt</td>
+</tr>
+<tr>
+<td>tasks</td>
+<td>3</td>
+<td><code>spawn</code> returns -1 (its success handle is an implementation-defined integer)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="74-garbage-collection">7.4 Garbage collection</h3>
+<p><strong>FROZEN model.</strong> The managed heap is a non-moving, stop-the-world exact
+mark/sweep collector. The loader heap is permanent and never swept. Every
+GC-capable allocation occurs at a safepoint where all scanned state is valid
+tagged Glon values. There are no stable handles, pinning or compaction.</p>
+<h3 id="75-stack-local-contexts-and-promotion">7.5 Stack-local contexts and promotion</h3>
+<p>A function context normally lives on the return stack. When a closure captures
+an escaping stack-local context, the context is promoted to the managed heap;
+the owning activation is redirected to the managed copy. A stack-local context
+that has never escaped is reclaimed with the activation.</p>
+<hr>
+<h2 id="8-host-boundary">8. Host boundary</h2>
+<p>Portable language semantics end at the host operations described in
+<strong><code>GLON-HOST-ABI.md</code></strong>. In summary:</p>
+<ul>
+<li>The language itself supplies arithmetic, comparison, allocation, output and
+  diagnostics through frozen S1 <code>HOST</code> operations. It does not supply file,
+  network, browser DOM or GUI semantics.</li>
+<li>A host supplies string literals only in the sense that the prelude supplies
+  <code>mk-string</code>; the reader's string expansion is language syntax but the word
+  is library code.</li>
+<li>Browser route/event dispatch (<code>current-route</code>, <code>current-event</code>,
+  <code>current-value</code>, <code>route</code>, <code>do-event</code>), WASM exports, the native session
+  facade and the desktop capability boundary are host interfaces, not
+  portable Glon semantics.</li>
+<li>The WebAssembly ABI is current/provisional, not frozen.</li>
+</ul>
+<hr>
+<h2 id="9-explicit-non-features-deferred">9. Explicit non-features (deferred)</h2>
+<p><strong>FROZEN as Alpha scope.</strong> The language deliberately does <strong>not</strong> have:</p>
+<ul>
+<li>infix operators or operator precedence;</li>
+<li>parentheses or comma-separated argument lists;</li>
+<li><code>switch</code>, <code>each</code>/<code>foreach</code>, <code>while</code>, <code>repeat</code>, <code>loop</code>;</li>
+<li>Rebol-style inline-condition <code>case</code> or <code>case/all</code>;</li>
+<li>full Rebol PARSE, string PARSE, PARSE actions, captures or <code>into</code>;</li>
+<li>a general <code>type?</code> in ordinary sessions;</li>
+<li>path evaluation, namespaces or qualified lookup;</li>
+<li>portable bare bound blocks;</li>
+<li>distributed closures or multicore tasks;</li>
+<li>floats, chars, maps, vectors, ports, <code>true</code>/<code>false</code> literals;</li>
+<li>mutable strings;</li>
+<li>comments as parser syntax (hosts strip <code>;;</code>).</li>
+</ul>
+<p>Post-Alpha language changes require evidence from real machine-written
+applications or a demonstrated correctness defect.</p>
+<hr>
+<h2 id="10-traceability-matrix">10. Traceability matrix</h2>
+<h3 id="101-core-operation-matrix">10.1 Core operation matrix</h3>
+<p>General limits (heap, stacks, contexts, block/string size, symbol/site counts)
+are in §7.3 and are not repeated per row. "Input requirement" means the
+expressions the operation consumes, not a runtime type check.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Definition</th>
+<th>Input requirement</th>
+<th>Output/side effect</th>
+<th>Failure</th>
+<th>Tests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>+ - * /</code></td>
+<td><code>emit_native</code>, <code>s1.c:134-160</code></td>
+<td>2 expressions</td>
+<td>one INT</td>
+<td>non-integer/overflow/div-zero UNRESOLVED</td>
+<td><code>r0_s1_tests.c</code>, model tests</td>
+</tr>
+<tr>
+<td><code>&lt; &gt; &lt;= &gt;=</code></td>
+<td>same</td>
+<td>2 expressions</td>
+<td>0/1</td>
+<td>non-integer UNRESOLVED</td>
+<td><code>r0_s1_tests.c</code>, traffic/model tests</td>
+</tr>
+<tr>
+<td><code>=</code></td>
+<td><code>r0_s1_runtime.c:3180-3235</code></td>
+<td>2 expressions</td>
+<td>0/1</td>
+<td>none</td>
+<td><code>r0_s1_equality_tests.c</code></td>
+</tr>
+<tr>
+<td><code>print</code></td>
+<td><code>r0_s1_runtime.c:3098-3114</code></td>
+<td>1 expression</td>
+<td>writes number + newline; no result</td>
+<td>non-integer UNRESOLVED</td>
+<td><code>r0_s1_tests.c</code></td>
+</tr>
+<tr>
+<td><code>values</code></td>
+<td><code>r0_s1_runtime.c:2841-2887</code></td>
+<td>block</td>
+<td>all results; each form exactly one</td>
+<td>machine fail-stop otherwise</td>
+<td><code>r0_s1_tests.c</code> J/K, <code>r0_s1_reduce_tests.c</code></td>
+</tr>
+<tr>
+<td><code>either</code></td>
+<td><code>r0_s1_runtime.c:3115-3145</code></td>
+<td>condition + 2 blocks</td>
+<td>branch result</td>
+<td>non-block unchecked</td>
+<td><code>r0_s1_tests.c</code>, <code>r0_s1_primer_tests.c</code></td>
+</tr>
+<tr>
+<td><code>do</code></td>
+<td><code>r0_s1_runtime.c:2948-2980</code>, <code>3145-3153</code></td>
+<td>block</td>
+<td>executes in current context</td>
+<td>non-block unchecked</td>
+<td><code>r0_s1_tests.c</code>, <code>r0_s1_bound_tests.c</code></td>
+</tr>
+<tr>
+<td><code>invoke</code></td>
+<td><code>r0_s1_runtime.c:3153-3180</code></td>
+<td>closure-producing expression</td>
+<td>closure result</td>
+<td>non-closure machine fail-stop</td>
+<td><code>r0_s1_invoke_tests.c</code></td>
+</tr>
+<tr>
+<td><code>reduce</code></td>
+<td><code>r0_s1_runtime.c:2889-2947</code></td>
+<td>loader block</td>
+<td>managed block</td>
+<td>non-block/managed machine fail-stop</td>
+<td><code>r0_s1_reduce_tests.c</code></td>
+</tr>
+<tr>
+<td><code>create-sin</code></td>
+<td><code>r0_s1_runtime.c:1804-1819</code></td>
+<td>3 expressions</td>
+<td>SIN! value</td>
+<td>none</td>
+<td><code>r0_s1_error_tests.c</code></td>
+</tr>
+<tr>
+<td><code>sin?</code></td>
+<td><code>r0_s1_runtime.c:2981-3088</code></td>
+<td>1 expression</td>
+<td>0/1</td>
+<td>none</td>
+<td><code>r0_s1_error_tests.c</code></td>
+</tr>
+<tr>
+<td><code>sin-type</code>, <code>sin-id</code>, <code>sin-arg</code></td>
+<td>same</td>
+<td>1 expression</td>
+<td>field value</td>
+<td>non-SIN <code>type/sin-field</code></td>
+<td><code>r0_s1_error_tests.c</code></td>
+</tr>
+<tr>
+<td><code>raise</code></td>
+<td><code>r0_s1_runtime.c:1821-1892</code>, <code>2981-3088</code></td>
+<td>1 expression</td>
+<td>unwind to judge</td>
+<td>non-SIN <code>type/raise</code></td>
+<td><code>r0_s1_error_tests.c</code></td>
+</tr>
+<tr>
+<td><code>judge</code></td>
+<td>same</td>
+<td>block</td>
+<td>block result or SIN!</td>
+<td>non-block <code>type/judge</code></td>
+<td><code>r0_s1_error_tests.c</code></td>
+</tr>
+<tr>
+<td><code>func</code></td>
+<td><code>r0_s1_runtime.c:3583-3658</code></td>
+<td>spec + body expressions</td>
+<td>closure; captures context</td>
+<td>non-block body machine fail-stop</td>
+<td><code>r0_s1_lambda_tests.c</code>, <code>r0_s1_case_tests.c</code> B10</td>
+</tr>
+<tr>
+<td><code>return</code></td>
+<td><code>r0_s1_runtime.c:3463-3530</code></td>
+<td>1 expression</td>
+<td>non-local return with result set</td>
+<td>outside function machine fail-stop</td>
+<td><code>r0_s1_tests.c</code> phase 3A, <code>r0_s1_case_tests.c</code> C17</td>
+</tr>
+<tr>
+<td><code>masm</code>/<code>raw</code></td>
+<td><code>r0_s1_runtime.c:686-760</code>, <code>281-620</code></td>
+<td>optional arity + block</td>
+<td>RAW callable</td>
+<td>parse <code>too_large</code>/<code>syntax</code></td>
+<td><code>r0_s1_masm_tests.c</code>, <code>r0_s1_masm_bound_tests.c</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="102-library-operation-matrix">10.2 Library operation matrix</h3>
+<p>Library operations are ordinary Glon; their limits are the general limits in
+§7.3 plus the per-operation range rules in §5.</p>
+<table>
+<thead>
+<tr>
+<th>Operation</th>
+<th>Definition</th>
+<th>Input requirement</th>
+<th>Output/side effect</th>
+<th>Failure</th>
+<th>Tests</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>mk-string</code></td>
+<td><code>jupyter/prelude.glon</code>, <code>demo/shop/bootstrap.glon</code></td>
+<td>block of byte ints</td>
+<td>new STRING!</td>
+<td>unchecked</td>
+<td><code>r0_s1_string_ops_tests.c</code>, primer</td>
+</tr>
+<tr>
+<td><code>str-eq</code>, <code>s/=</code></td>
+<td><code>demo/shop/common.glon</code>, <code>strings.glon</code></td>
+<td>2 STRING!</td>
+<td>0/1</td>
+<td><code>type/s/=</code></td>
+<td><code>r0_s1_string_ops_tests.c</code></td>
+</tr>
+<tr>
+<td><code>get</code></td>
+<td>prelude/common</td>
+<td>WORD</td>
+<td>binding value, no invoke</td>
+<td>unbound lookup fail-stop</td>
+<td><code>r0_s1_invoke_tests.c</code>, lambda tests</td>
+</tr>
+<tr>
+<td><code>lambda</code>, <code>does</code></td>
+<td>prelude/common</td>
+<td>spec/body or body</td>
+<td>CLOSURE</td>
+<td>same as <code>func</code></td>
+<td><code>r0_s1_lambda_tests.c</code></td>
+</tr>
+<tr>
+<td><code>block-len</code>, <code>block-at</code></td>
+<td>prelude/common</td>
+<td>block, index</td>
+<td>length/value</td>
+<td>unchecked</td>
+<td><code>r0_s1_reduce_tests.c</code>, <code>r0_s1_invoke_tests.c</code>, case/parse</td>
+</tr>
+<tr>
+<td><code>select</code>, <code>select-at</code></td>
+<td>prelude/common</td>
+<td>rows, key</td>
+<td>first matching row/NONE</td>
+<td>unchecked shape</td>
+<td><code>r0_s1_invoke_tests.c</code></td>
+</tr>
+<tr>
+<td><code>case</code></td>
+<td><code>demo/shop/case.glon</code></td>
+<td>one block of clause pairs</td>
+<td>action result/NONE</td>
+<td>malformed clause machine fail-stop</td>
+<td><code>r0_s1_case_tests.c</code></td>
+</tr>
+<tr>
+<td><code>parse</code></td>
+<td><code>demo/shop/parse.glon</code></td>
+<td>input and rules blocks</td>
+<td>1/0</td>
+<td>no raise on ordinary mismatch</td>
+<td><code>r0_s1_parse_tests.c</code></td>
+</tr>
+<tr>
+<td><code>s/+ s/length s/print</code></td>
+<td><code>demo/shop/strings.glon</code></td>
+<td>STRING! arguments</td>
+<td>new string / INT / output</td>
+<td><code>type/&lt;op&gt;</code></td>
+<td><code>r0_s1_string_ops_tests.c</code></td>
+</tr>
+<tr>
+<td><code>s/at s/slice s/span s/scan-set s/from-int</code></td>
+<td><code>demo/shop/strings-ext.glon</code></td>
+<td>types and ranges in §5.5</td>
+<td>byte/new string/INT/string</td>
+<td><code>type/&lt;op&gt;</code> or <code>range/&lt;op&gt;</code></td>
+<td><code>r0_s1_string_ext_tests.c</code></td>
+</tr>
+<tr>
+<td><code>spawn yield run-tasks reset-tasks</code></td>
+<td><code>demo/shop/demos/tuple-space.glon</code></td>
+<td>task body</td>
+<td>cooperative task scheduling</td>
+<td><code>escape/transport</code>; -1 when full</td>
+<td><code>r0_s1_m1_tests.c</code>, <code>r0_s1_error_tests.c</code>, primer</td>
+</tr>
+</tbody>
+</table>
+<h3 id="103-area-matrix">10.3 Area matrix</h3>
+<p>This matrix maps the specification to implementation and conformance tests.
+Line numbers are to the current worktree.</p>
+<table>
+<thead>
+<tr>
+<th>Spec area</th>
+<th>Implementation</th>
+<th>Tests</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Value tags and cell encoding</td>
+<td><code>r0_s1.h:17-50</code></td>
+<td><code>r0_s1_tests.c</code>, <code>r0_s1_equality_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td>Reader: integers, words, prefixes</td>
+<td><code>r0_s1_runtime.c:177-216</code></td>
+<td><code>r0_s1_tests.c</code>, <code>r0_s1_parse_hardening_tests.c</code></td>
+<td>IMPLEMENTED (forms FROZEN)</td>
+</tr>
+<tr>
+<td>Reader: blocks, site ids, func scopes</td>
+<td><code>r0_s1_runtime.c:764-886</code></td>
+<td><code>r0_s1_tests.c</code>, <code>r0_s1_bound_tests.c</code>, <code>r0_s1_case_tests.c</code></td>
+<td>FROZEN/IMPLEMENTED</td>
+</tr>
+<tr>
+<td>Reader: strings → <code>mk-string</code></td>
+<td><code>r0_s1_runtime.c:643-661</code>, <code>764-782</code></td>
+<td><code>r0_s1_string_ops_tests.c</code>, primer tests</td>
+<td>IMPLEMENTED</td>
+</tr>
+<tr>
+<td>Reader: masm/raw</td>
+<td><code>r0_s1_runtime.c:686-760</code>, <code>281-620</code></td>
+<td><code>r0_s1_masm_tests.c</code>, <code>r0_s1_masm_bound_tests.c</code></td>
+<td>IMPLEMENTED (trapdoor)</td>
+</tr>
+<tr>
+<td>Top-level program / result sets</td>
+<td><code>r0_s1_runtime.c:3777-3810</code>, <code>3747-3775</code></td>
+<td><code>r0_s1_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td>Subexpression dispatch</td>
+<td><code>r0_s1_runtime.c:3569-3745</code></td>
+<td><code>r0_s1_tests.c</code>, <code>r0_s1_invoke_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td>Word lookup</td>
+<td><code>r0_s1_runtime.c:2067-2187</code></td>
+<td><code>r0_s1_tests.c</code>, <code>r0_s1_p5_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td>Set-word nearest binding/local creation</td>
+<td><code>r0_s1_runtime.c:2578-2643</code></td>
+<td><code>r0_s1_tests.c</code>, <code>r0_s1_case_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td>Bound lexical access / Guard of Binding</td>
+<td><code>r0_s1_runtime.c:2228-2291</code>, <code>2188-2227</code></td>
+<td><code>r0_s1_bound_tests.c</code>, <code>r0_s1_p4_tests.c</code>, <code>r0_s1_case_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td>Closures / capture / promotion</td>
+<td><code>r0_s1_runtime.c:2729-2888</code>, <code>3262-3462</code></td>
+<td><code>r0_s1_tests.c</code>, <code>r0_s1_lambda_tests.c</code>, <code>r0_s1_nested_closure_tests.c</code>, <code>r0_s1_case_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td><code>func</code> / non-block body</td>
+<td><code>r0_s1_runtime.c:3583-3658</code></td>
+<td><code>r0_s1_case_tests.c</code> B10</td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td><code>return</code></td>
+<td><code>r0_s1_runtime.c:3463-3530</code></td>
+<td><code>r0_s1_tests.c</code> phase 3A, <code>r0_s1_case_tests.c</code> C17</td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td><code>either</code></td>
+<td><code>r0_s1_runtime.c:3115-3145</code></td>
+<td><code>r0_s1_tests.c</code>, <code>r0_s1_primer_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td><code>do</code></td>
+<td><code>r0_s1_runtime.c:2948-2980</code>, <code>3145-3153</code></td>
+<td><code>r0_s1_tests.c</code>, primer tests</td>
+<td>FROZEN (block input)</td>
+</tr>
+<tr>
+<td><code>values</code></td>
+<td><code>r0_s1_runtime.c:2841-2887</code></td>
+<td><code>r0_s1_tests.c</code> J/K, <code>r0_s1_reduce_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td><code>reduce</code></td>
+<td><code>r0_s1_runtime.c:2889-2947</code></td>
+<td><code>r0_s1_reduce_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td><code>invoke</code></td>
+<td><code>r0_s1_runtime.c:3153-3180</code></td>
+<td><code>r0_s1_invoke_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td>Arithmetic/comparison</td>
+<td><code>r0_s1_runtime.c:3089-3260</code>, <code>s1.c:134-160</code></td>
+<td><code>r0_s1_tests.c</code>, traffic/model tests</td>
+<td>FROZEN on integers</td>
+</tr>
+<tr>
+<td><code>print</code></td>
+<td><code>r0_s1_runtime.c:3098-3114</code></td>
+<td><code>r0_s1_tests.c</code></td>
+<td>IMPLEMENTED</td>
+</tr>
+<tr>
+<td>Equality</td>
+<td><code>r0_s1_runtime.c:3180-3235</code></td>
+<td><code>r0_s1_equality_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td>SIN! value/accessors</td>
+<td><code>r0_s1_runtime.c:1804-1892</code>, <code>2981-3088</code></td>
+<td><code>r0_s1_error_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td><code>raise</code> / <code>judge</code></td>
+<td><code>r0_s1_runtime.c:1821-1892</code>, <code>3120-3250</code></td>
+<td><code>r0_s1_error_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td>Escape law</td>
+<td><code>r0_s1_runtime.c:2388-2577</code></td>
+<td><code>r0_s1_escape_law_tests.c</code>, <code>r0_s1_bound_tests.c</code></td>
+<td>FROZEN</td>
+</tr>
+<tr>
+<td>Context capacities</td>
+<td><code>r0_s1.h:105</code>, <code>r0_s1_runtime.c:2568-2577</code></td>
+<td><code>r0_s1_context_capacity_tests.c</code></td>
+<td>IMPLEMENTED limit</td>
+</tr>
+<tr>
+<td>GC / memory</td>
+<td><code>r0_s1_runtime.c:1034-1770</code>, <code>r0_s1.h:226-338</code></td>
+<td><code>r0_s1_m2_tests.c</code>, <code>r0_s1_gc_safepoint_tests.c</code>, <code>r0_s1_gc_interior_tests.c</code></td>
+<td>FROZEN model / IMPLEMENTED limits</td>
+</tr>
+<tr>
+<td>Parse/load rollback</td>
+<td><code>r0_s1_runtime.c:4030-4064</code></td>
+<td><code>r0_s1_parse_hardening_tests.c</code></td>
+<td>IMPLEMENTED</td>
+</tr>
+<tr>
+<td>Session outcomes</td>
+<td><code>r0_s1_session.c</code></td>
+<td><code>r0_s1_session_tests.c</code></td>
+<td>IMPLEMENTED</td>
+</tr>
+<tr>
+<td>Prelude vocabulary</td>
+<td><code>jupyter/prelude.glon</code>, <code>demo/shop/bootstrap.glon</code></td>
+<td><code>r0_s1_lambda_tests.c</code>, <code>r0_s1_invoke_tests.c</code>, <code>r0_s1_reduce_tests.c</code>, primer tests</td>
+<td>IMPLEMENTED</td>
+</tr>
+<tr>
+<td><code>case</code></td>
+<td><code>demo/shop/case.glon</code></td>
+<td><code>r0_s1_case_tests.c</code></td>
+<td>IMPLEMENTED</td>
+</tr>
+<tr>
+<td><code>parse</code></td>
+<td><code>demo/shop/parse.glon</code></td>
+<td><code>r0_s1_parse_tests.c</code></td>
+<td>IMPLEMENTED</td>
+</tr>
+<tr>
+<td>Strings</td>
+<td><code>demo/shop/strings.glon</code>, <code>demo/shop/common.glon</code></td>
+<td><code>r0_s1_string_ops_tests.c</code></td>
+<td>IMPLEMENTED</td>
+</tr>
+<tr>
+<td>String extension</td>
+<td><code>demo/shop/strings-ext.glon</code></td>
+<td><code>r0_s1_string_ext_tests.c</code></td>
+<td>IMPLEMENTED optional</td>
+</tr>
+<tr>
+<td>Tasks</td>
+<td><code>demo/shop/demos/tuple-space.glon</code>, <code>m1_layout.h</code></td>
+<td><code>r0_s1_m1_tests.c</code>, <code>r0_s1_error_tests.c</code>, primer tasks examples</td>
+<td>IMPLEMENTED optional</td>
+</tr>
+<tr>
+<td>WASM ABI</td>
+<td><code>standalone/glon.c</code>, <code>GLON-WASM-ABI.md</code></td>
+<td>WASM node tests listed in that document</td>
+<td>IMPLEMENTED/provisional</td>
+</tr>
+<tr>
+<td>Native host facade</td>
+<td><code>r0_s1_session.c</code>, <code>r0_s1_show.c</code>, <code>glon.c</code></td>
+<td><code>r0_s1_session_tests.c</code>, <code>r0_s1_primer_tests.c</code></td>
+<td>IMPLEMENTED</td>
+</tr>
+<tr>
+<td>Frozen S1</td>
+<td><code>s1.c</code>, <code>s1.h</code>, <code>tests.c</code>, <code>adversarial.c</code>, <code>claims.c</code></td>
+<td><code>./check-frozen-s1.sh</code></td>
+<td>FROZEN</td>
+</tr>
+</tbody>
+</table>
+<hr>
+<h2 id="11-completeness-audit">11. Completeness audit</h2>
+<h3 id="111-can-an-independent-agent-write-valid-glon-from-this-document">11.1 Can an independent agent write valid Glon from this document?</h3>
+<p><strong>Mostly yes, for the documented core and shipped libraries.</strong> The core syntax,
+evaluation order, binding, closures, result sets, SIN!, string operations and
+limits are now specified. Before this consolidation, the following assumptions
+forced a reader into the interpreter source:</p>
+<ol>
+<li><strong>String literals need <code>mk-string</code> from a library.</strong> The reader expands
+   <code>"..."</code> into <code>mk-string [...]</code>; a bare core runtime halts. The Alpha laws
+   describe strings but do not make this dependency explicit.</li>
+<li><strong>Multi-result arguments are collapsed to their first value.</strong> Native and
+   closure argument evaluation reduces each argument to one value; <code>reduce</code>
+   likewise keeps the first result. This is observable (<code>+ values [1 2] 3</code> is
+   4) and is not in the laws.</li>
+<li><strong><code>values</code> requires exactly one result per source form.</strong> A nested
+   <code>values</code> inside <code>values</code> fail-stops. The primer does not state this.</li>
+<li><strong>Non-block <code>do</code>/<code>either</code>, non-block <code>func</code> bodies, and missing/extra
+   arguments are unchecked or fail-stop.</strong> Only <code>func</code> non-block bodies are
+   described by the laws; the rest are implementation-dependent.</li>
+<li><strong>Comments are host pre-processing, not parser syntax, and are not
+   string-aware.</strong> The laws/primer show <code>;;</code> without saying the reader cannot
+   parse it and that <code>;;</code> inside strings is stripped.</li>
+<li><strong>Tokens are silently truncated at 63 bytes</strong>, and the source envelope
+   ignores trailing forms after a leading <code>[</code>.</li>
+<li><strong><code>none</code> is a literal token, not a binding.</strong> <code>none:</code> can exist, but plain
+   <code>none</code> stays NONE.</li>
+<li><strong>Non-integer arithmetic and <code>print</code> are not type-checked.</strong> The contract is
+   integer arithmetic; the implementation computes on <code>payload/16</code>.</li>
+<li><strong><code>reduce</code> rejects managed source blocks</strong> (a data/execution separation
+   rule that is described only in runtime comments).</li>
+<li><strong><code>masm</code>/<code>raw</code> is a private, unsafe sublanguage</strong> whose mnemonics are not
+    ordinary vocabulary.</li>
+</ol>
+<h3 id="112-prioritised-documentation-gaps">11.2 Prioritised documentation gaps</h3>
+<table>
+<thead>
+<tr>
+<th>Priority</th>
+<th>Gap</th>
+<th>Where it bites</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>P0</td>
+<td>Result-set collapse to first value in argument/reduce position</td>
+<td>incorrect arithmetic and data construction</td>
+</tr>
+<tr>
+<td>P0</td>
+<td><code>values</code> exactly-one-result rule</td>
+<td>silent <code>** halted</code> on nested/multi-result forms</td>
+</tr>
+<tr>
+<td>P0</td>
+<td>String literal → <code>mk-string</code> library dependency</td>
+<td>string programs fail on a bare runtime</td>
+</tr>
+<tr>
+<td>P0</td>
+<td>Unchecked non-block <code>do</code>/<code>either</code>, missing args</td>
+<td>memory-unsafe or nonsensical results</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>Non-integer arithmetic/print and division-by-zero contract</td>
+<td>portability, native vs WASM divergence</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>Host comment stripping, including inside strings</td>
+<td>source corruption and parse errors</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>Token truncation at 63 bytes and symbol capacity</td>
+<td>surprising collisions</td>
+</tr>
+<tr>
+<td>P1</td>
+<td>Source envelope ignores trailing forms</td>
+<td>silently skipped program text</td>
+</tr>
+<tr>
+<td>P1</td>
+<td><code>reduce</code> managed-source rejection</td>
+<td>confusing halt after <code>reduce</code></td>
+</tr>
+<tr>
+<td>P1</td>
+<td><code>none</code> versus <code>none:</code>/<code>'none</code></td>
+<td>binding and equality mistakes</td>
+</tr>
+<tr>
+<td>P1</td>
+<td><code>return</code> outside function and no-argument <code>return</code></td>
+<td>fail-stop vs value confusion</td>
+</tr>
+<tr>
+<td>P2</td>
+<td><code>func</code> spec non-block/duplicate parameters</td>
+<td>undefined arity and slot layout</td>
+</tr>
+<tr>
+<td>P2</td>
+<td><code>masm</code> grammar, labels and register ABI</td>
+<td>trapdoor use requires source reading</td>
+</tr>
+<tr>
+<td>P2</td>
+<td><code>print</code> exact formatting for all values</td>
+<td>host-dependent output</td>
+</tr>
+<tr>
+<td>P2</td>
+<td><code>judge</code> result-set behaviour for multi-result blocks</td>
+<td>result loss in catch paths</td>
+</tr>
+<tr>
+<td>P2</td>
+<td>Task scheduling details beyond 3 slots</td>
+<td>concurrency expectations</td>
+</tr>
+</tbody>
+</table>
+<h3 id="113-missing-conformance-tests-prioritised">11.3 Missing conformance tests (prioritised)</h3>
+<ol>
+<li>Argument collapse: <code>+ values [1 2] 3</code>, <code>print values [1 2]</code>,
+   <code>either values [0 1] [1] [2]</code>, <code>reduce [values [1 2] 3]</code>.</li>
+<li><code>values</code> rejection of zero/multi-result forms and nested <code>values</code>.</li>
+<li><code>do</code>/<code>either</code> with non-block arguments: document a controlled failure or
+   an explicit undefined contract.</li>
+<li>Missing and extra function arguments (currently reads beyond the block or
+   leaves forms behind).</li>
+<li><code>func</code> with a non-block spec, duplicate parameter names and more than 16
+   parameters.</li>
+<li><code>return</code> outside a function; <code>return</code> with no following expression.</li>
+<li>String literal with <code>;;</code> inside; unterminated string; backslash and quote
+   handling.</li>
+<li>Token of 64+ bytes and two long tokens sharing a 63-byte prefix.</li>
+<li><code>none: 5  none</code> and <code>'none</code> equality/molding.</li>
+<li><code>reduce</code> of a managed block (<code>reduce reduce [1]</code>).</li>
+<li>Non-integer operands for every arithmetic/comparison native.</li>
+<li>Division/modulo by zero (native crash versus WASM trap).</li>
+<li>Source beginning with a block followed by more forms.</li>
+<li><code>print</code> of NONE, word, block, string and closure.</li>
+<li>Host comment stripping of <code>;;</code> inside a string through each host path.</li>
+<li>Form adjacency and reader boundaries: <code>a[1]</code>, <code>1"x"</code>, <code>a"b"</code>,
+    <code>func[x][y]</code>, <code>func "x" [1]</code> inside a block, <code>masm[ ]</code>, <code>masm 1[]</code>,
+    <code>masm1[]</code>, <code>masm -1 []</code>.</li>
+<li>Top-level unwrapped <code>func</code> versus the same form inside a block.</li>
+<li>Token truncation at 63 bytes and two long tokens sharing a prefix.</li>
+</ol>
+<h3 id="114-contradictions-and-evidence-gaps">11.4 Contradictions and evidence gaps</h3>
+<ul>
+<li><strong><code>print</code> and arithmetic types.</strong> The primer says <code>print</code> prints integers
+  only and that arithmetic operates on integers. The implementation performs
+  no type check. This specification treats non-integer behaviour as
+  UNRESOLVED rather than choosing one description.</li>
+<li><strong><code>do</code>/<code>either</code> non-block failure.</strong> The laws describe them as taking
+  blocks; the implementation has no type guard. No test pins the failure.</li>
+<li><strong><code>values</code> multi-result acceptance.</strong> The laws say every expression is
+  reduced to a single value; the implementation fail-stops when a form does
+  not have exactly one result. The exact rule is only visible in
+  <code>emit_values</code>.</li>
+<li><strong>Traffic test 8.</strong> <code>GLON-ARCHITECTURE-DECISION-2026-11.md</code> records an
+  unresolved traffic-test discrepancy (test 8 fail-stop) in this environment,
+  separate from the language contract. It is a verification gap, not evidence
+  for a language change.</li>
+</ul>
+<hr>
+<h2 id="12-test-report-for-this-audit">12. Test report for this audit</h2>
+<p>Commands actually run in this worktree (2026-11-17):</p>
+<table>
+<thead>
+<tr>
+<th>Command</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>./check-frozen-s1.sh</code></td>
+<td>PASS: frozen at <code>f90496c…</code>; frozen files unchanged</td>
+</tr>
+<tr>
+<td><code>./gc-worklist-overflow-test</code></td>
+<td>PASS: all checks</td>
+</tr>
+<tr>
+<td><code>python3 demo/shop/build-primer.py --check</code></td>
+<td>PASS: 30 examples up to date</td>
+</tr>
+<tr>
+<td>Core groups (<code>r0_s1_tests</code>, lambda, reduce, parse, equality, bound, case, error, escape law, strings, strings-ext, invoke, session, context capacity, parse hardening, masm, nested closure)</td>
+<td>464 <code>ok</code>, 0 failures (temporary test driver, same objects as <code>make test</code>)</td>
+</tr>
+<tr>
+<td>Remaining non-traffic groups (S1, adversarial, claims, R0, debugger, M1, M2, M3/M3B/M3C/M3D, P4, P5, G1A–G1E, GC safepoint, primer, GC worklist, GC interior, masm bound)</td>
+<td>420 <code>ok</code>, 0 failures</td>
+</tr>
+<tr>
+<td>Vehicle-model groups (Newell, OVM/FVDM, NaSch)</td>
+<td>38 <code>ok</code>, 0 failures</td>
+</tr>
+<tr>
+<td>Full <code>./s1</code></td>
+<td>Did not complete: it reached the traffic group, printed a <code>[dump]</code> at test 8 and remained CPU-bound. This matches the already-recorded unresolved traffic-test-8 discrepancy; it is not reproduced by the 922 passing checks above.</td>
+</tr>
+</tbody>
+</table>
+<p>The test driver was a temporary file under <code>/tmp</code>, linked against the
+repository's already-built object files. No repository source, test or build
+file was changed.</p>
+<h3 id="121-final-verification-pass">12.1 Final verification pass</h3>
+<p>The follow-up documentation pass verified every EBNF production against
+<code>parse_int</code>, <code>parse_word</code>, <code>parse_string_literal</code>, <code>parse_masm</code>, <code>parse_block</code>,
+<code>parse_form</code> and <code>parse_program</code>; corrected the item/form distinction, zero
+width separators, func body optionality, unsigned masm arity and token
+truncation; and mapped every Mermaid diagram to its EBNF production. Details
+and remaining ambiguity are in <code>GLON-SPEC-VERIFICATION.md</code>.</p>
+<p>No original contract was replaced. The detailed WASM ABI remains
+<code>GLON-WASM-ABI.md</code>; no repository artifact naming Rebolek was found.</p>
+<hr>
+<h2 id="13-source-and-test-index">13. Source and test index</h2>
+<p>Authoritative documents:</p>
+<ul>
+<li><code>GLON-ALPHA-LAWS.md</code> — normative language contract.</li>
+<li><code>GLON-ARCHITECTURE-MEMORY.md</code> — decisions, memory map, limits.</li>
+<li><code>GLON-WASM-ABI.md</code> — original detailed WASM ABI.</li>
+<li><code>GLON-SPEC-VERIFICATION.md</code> — final EBNF/diagram/ABI provenance audit.</li>
+<li><code>GLON-IMPLEMENTER-GUIDE.md</code> — minimum reading path for independent implementers.</li>
+<li><code>GLON-HOST-CAPABILITIES.md</code>, <code>GLON-APP-MODEL.md</code> — host/application model.</li>
+<li><code>GLON-PRIMER.md</code> — instructional primer; subordinate to the laws.</li>
+</ul>
+<p>Implementation:</p>
+<ul>
+<li><code>r0_s1_runtime.c</code> — reader, emitter, evaluator, GC, SIN!, escape law.</li>
+<li><code>r0_s1.h</code> — tags, layouts, native ids, capacities, memory constants.</li>
+<li><code>r0_s1_session.c</code> — persistent session outcome classification.</li>
+<li><code>r0_s1_show.c</code> — text outcome/molding.</li>
+<li><code>s1.c</code>, <code>s1.h</code> — frozen substrate.</li>
+<li><code>m1_layout.h</code> — task layout.</li>
+</ul>
+<p>Libraries:</p>
+<ul>
+<li><code>jupyter/prelude.glon</code> — minimal prelude.</li>
+<li><code>demo/shop/bootstrap.glon</code> — shop bootstrap copy.</li>
+<li><code>demo/shop/common.glon</code> — <code>str-eq</code>, <code>get</code>, <code>lambda</code>, <code>does</code>, block access,
+  <code>select</code>, view vocabulary.</li>
+<li><code>demo/shop/strings.glon</code>, <code>demo/shop/strings-ext.glon</code>.</li>
+<li><code>demo/shop/case.glon</code>, <code>demo/shop/parse.glon</code>.</li>
+<li><code>demo/shop/demos/tuple-space.glon</code> — tasks.</li>
+</ul>
+<p>Tests:</p>
+<ul>
+<li>Core: <code>r0_s1_tests.c</code>, <code>r0_s1_lambda_tests.c</code>, <code>r0_s1_reduce_tests.c</code>,
+  <code>r0_s1_parse_tests.c</code>, <code>r0_s1_equality_tests.c</code>, <code>r0_s1_bound_tests.c</code>,
+  <code>r0_s1_case_tests.c</code>, <code>r0_s1_error_tests.c</code>, <code>r0_s1_escape_law_tests.c</code>,
+  <code>r0_s1_invoke_tests.c</code>, <code>r0_s1_nested_closure_tests.c</code>,
+  <code>r0_s1_masm_tests.c</code>.</li>
+<li>Strings: <code>r0_s1_string_ops_tests.c</code>, <code>r0_s1_string_ext_tests.c</code>.</li>
+<li>Sessions/resources: <code>r0_s1_session_tests.c</code>,
+  <code>r0_s1_context_capacity_tests.c</code>, <code>r0_s1_parse_hardening_tests.c</code>.</li>
+<li>Memory/tasks: <code>r0_s1_m1_tests.c</code>, <code>r0_s1_m2_tests.c</code>,
+  <code>r0_s1_gc_safepoint_tests.c</code>, <code>r0_s1_gc_interior_tests.c</code>,
+  <code>r0_s1_gc_worklist_tests.c</code>.</li>
+<li>Models: <code>r0_s1_newell_tests.c</code>, <code>r0_s1_ovm_tests.c</code>,
+  <code>r0_s1_nasch_tests.c</code>, <code>r0_s1_traffic_tests.c</code>.</li>
+</ul>
+</main>
+<footer>Generated from the pinned upstream Markdown at <code>89de40e737b022a0d987093bb6c5b1e8d1a8a83e</code>. The original Markdown is preserved under <a href="../source/">source/</a>.</footer>
+
+</body>
+</html>
