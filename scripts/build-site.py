@@ -167,9 +167,13 @@ def source_stats(text: str) -> str:
 def implementation_section(result: dict, source_text: str, challenge_dir: Path) -> tuple[str, str]:
     reference = result.get("reference_implementation")
     comparison = result.get("implementation_comparison") or {}
-    glon_layer = "Glon library" if reference else "Glon implementation"
+    is_application = result.get("source_layer") == "application"
+    if is_application:
+        glon_layer = "Glon application"
+    else:
+        glon_layer = "Glon library" if reference else "Glon implementation"
     glon_label = glon_layer + (" (partial)" if result.get("implementation_status") == "partial" else "")
-    glon_source_label = "library source" if reference else "source"
+    glon_source_label = "application source" if is_application else ("library source" if reference else "source")
     glon_pane = (
         '<div class="code-pane">'
         f'<h3>{esc(glon_label)}</h3>'
@@ -287,6 +291,44 @@ def challenge_body(result: dict, source_text: str, config: dict, challenge_dir: 
                esc(str(probe.get("actual_exit"))), esc(detail))
         )
 
+    history = result.get("history", []) or []
+    history_html = ""
+    if history:
+        history_html = ('<div class="callout"><strong>Completion history.</strong><ul>'
+                        + ''.join(f"<li>{esc(x)}</li>" for x in history)
+                        + '</ul></div>')
+
+    file_checks = []
+    for case in cases:
+        for check in case.get("file_checks", []) or []:
+            file_checks.append((case.get("id", ""), check))
+    file_rows = []
+    for case_id, check in file_checks:
+        detail = ""
+        if check.get("kind") == "temp_cleanup":
+            detail = ", ".join(check.get("leftovers") or []) or "none"
+        elif check.get("kind") == "symlink":
+            detail = "target " + str(check.get("target", ""))
+        else:
+            detail = f"{check.get('actual_size')} / {check.get('expected_size')} bytes"
+        file_rows.append(
+            "<tr class='%s'><td><code>%s</code></td><td>%s</td><td>%s</td><td>%s</td></tr>"
+            % ("pass" if check.get("status") == "pass" else "fail",
+               esc(case_id), esc(check.get("path", "")), esc(check.get("kind", "")),
+               esc(detail) + " — " + esc(check.get("status", "")))
+        )
+
+    perf = result.get("performance") or {}
+    perf_rows = []
+    for row in perf.get("rows", []) or []:
+        perf_rows.append(
+            "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>"
+            % (esc(row.get("size", "")), esc(row.get("case", "")),
+               esc(row.get("seconds", "")), esc(row.get("gc_collections", "")),
+               esc(row.get("post_collection_live_cells", "")),
+               esc(row.get("peak_rss_kb", "")))
+        )
+
     limitations = "\n".join(f"<li>{esc(x)}</li>" for x in result.get("known_limitations", []))
     attribution = esc(result.get("attribution", ""))
     implementation_html, comparison_html = implementation_section(result, source_text, challenge_dir)
@@ -297,6 +339,7 @@ def challenge_body(result: dict, source_text: str, config: dict, challenge_dir: 
   <p>{status_badge(passed, implementation_status)} <span class="muted">Execution results verified with the pinned interpreter; status reflects the implemented scope.</span></p>
   <p>{esc(result.get('description', ''))}</p>
   <p><strong>Attribution.</strong> {attribution}</p>
+  {history_html}
   {('<div class="callout"><strong>Complete operation blocked.</strong> ' + esc(blocker) + '</div>') if blocker else ''}
   {('<p class="muted"><strong>Host dependency:</strong> ' + esc(host_dependency) + '</p>') if host_dependency else ''}
   {('<p class="muted"><strong>Libraries loaded:</strong> ' + ', '.join('<code>' + esc(x) + '</code>' for x in libraries) + '</p>') if libraries else ''}
@@ -316,6 +359,10 @@ def challenge_body(result: dict, source_text: str, config: dict, challenge_dir: 
     <thead><tr><th>Case</th><th>Expected stdout</th><th>Actual stdout</th><th>Exit</th><th>Status</th></tr></thead>
     <tbody>{''.join(rows)}</tbody>
   </table>
+
+  {('<h2 id="files">File verification</h2><table><thead><tr><th>Case</th><th>Path</th><th>Check</th><th>Detail</th></tr></thead><tbody>' + ''.join(file_rows) + '</tbody></table>') if file_rows else ''}
+
+  {('<h2 id="performance">Measured performance</h2><p class="muted">' + esc(perf.get("note", "")) + '</p><p class="muted">Managed heap capacity: ' + esc(perf.get("managed_heap_cells", "")) + ' cells.</p><table><thead><tr><th>Size</th><th>Case</th><th>Seconds</th><th>GC collections</th><th>Post-collection live cells</th><th>Peak RSS (KiB)</th></tr></thead><tbody>' + ''.join(perf_rows) + '</tbody></table>') if perf_rows else ''}
 
   <h2 id="limits">Known limitations</h2>
   <ul>{limitations or '<li>None recorded.</li>'}</ul>

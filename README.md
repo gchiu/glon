@@ -27,7 +27,7 @@ upstream Markdown and EBNF; it does not maintain divergent handwritten copies.
 |---|---|---|
 | [GCD](challenges/gcd/README.md) | Nonnegative integer subtraction Euclid | Verified |
 | [Factorial](challenges/factorial/README.md) | Recursive multiplication, 0!–19! | Verified; overflow at 20! |
-| [File Text Replacement](challenges/file-replace/README.md) | REBOL 2 Cookbook file replace, in-memory partial | Partial; file I/O blocked |
+| [File Text Replacement](challenges/file-replace/README.md) | REBOL 2 Cookbook original-path file replace | Verified; optional file module |
 
 Challenges are added one at a time and reviewed before the next is started.
 REBOL Cookbook challenges include the original `reference.reb` listing alongside
@@ -39,8 +39,8 @@ the Glon source; the generated page compares their behaviour and limitations.
 
 ```text
 repository: https://github.com/gchiu/rebol-substrate-experiment
-commit:     89de40e737b022a0d987093bb6c5b1e8d1a8a83e
-build:      make glon
+commit:     935e9f7584748fb80590660985bba0af851a03fa
+build:      make glon MODULES=file
 ```
 
 The build target produces the native `glon` CLI plus its `glon-lib/` libraries
@@ -88,12 +88,14 @@ requirements.txt         pinned documentation build dependency
 From the repository root:
 
 ```sh
-scripts/build-interpreter.sh 89de40e737b022a0d987093bb6c5b1e8d1a8a83e .tools/glon-eng
+scripts/build-interpreter.sh 935e9f7584748fb80590660985bba0af851a03fa .tools/glon-eng
 ```
 
 The script clones the engineering repository at the pinned commit and runs
-`make glon`. The resulting CLI is `.tools/glon-eng/glon`; its `glon-lib/`
-directory sits beside it and is loaded automatically.
+`make glon MODULES=file`. The resulting CLI is `.tools/glon-eng/glon`; its
+`glon-lib/` directory sits beside it and is loaded automatically. The optional
+file module is required by the completed file-replacement challenge; other
+challenges continue to run through the same native CLI.
 
 `.tools/` is ignored by Git.
 

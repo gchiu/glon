@@ -62,15 +62,106 @@ def decode(value) -> str:
     return str(value)
 
 
-def run_program(glon: Path, program: Path, timeout: float) -> dict:
+def safe_relpath(value: str) -> Path:
+    path = Path(value)
+    if path.is_absolute() or any(part in ("", ".", "..") for part in path.parts):
+        raise HarnessError(f"unsafe relative path: {value}")
+    return path
+
+
+def spec_bytes(spec: dict) -> bytes:
+    if not isinstance(spec, dict):
+        raise HarnessError("file spec is not an object")
+    if "text" in spec:
+        return str(spec["text"]).encode("utf-8")
+    if "hex" in spec:
+        try:
+            return bytes.fromhex(str(spec["hex"]))
+        except ValueError as exc:
+            raise HarnessError(f"invalid hex in file spec: {exc}") from exc
+    if "byte" in spec:
+        try:
+            b = int(spec["byte"])
+            n = int(spec.get("count", 0))
+        except (TypeError, ValueError) as exc:
+            raise HarnessError(f"invalid byte/count in file spec: {exc}") from exc
+        if not 0 <= b <= 255 or n < 0:
+            raise HarnessError("byte/count out of range")
+        prefix = spec_bytes({"text": spec["prefix_text"]}) if "prefix_text" in spec else b""
+        suffix = spec_bytes({"text": spec["suffix_text"]}) if "suffix_text" in spec else b""
+        return prefix + bytes([b]) * n + suffix
+    raise HarnessError("file spec needs text, hex or byte/count")
+
+
+def replace_bytes(spec: dict, initial: dict[str, bytes]) -> bytes:
+    path = str(spec.get("path", ""))
+    if path not in initial:
+        raise HarnessError(f"expected_replace source is missing: {path}")
+    if "old_text" in spec:
+        old = str(spec["old_text"]).encode("utf-8")
+    elif "old_hex" in spec:
+        try:
+            old = bytes.fromhex(str(spec["old_hex"]))
+        except ValueError as exc:
+            raise HarnessError(f"invalid old_hex: {exc}") from exc
+    else:
+        raise HarnessError("expected_replace needs old_text or old_hex")
+    if "new_text" in spec:
+        new = str(spec["new_text"]).encode("utf-8")
+    elif "new_hex" in spec:
+        try:
+            new = bytes.fromhex(str(spec["new_hex"]))
+        except ValueError as exc:
+            raise HarnessError(f"invalid new_hex: {exc}") from exc
+    else:
+        new = b""
+    return initial[path].replace(old, new, 1)
+
+def write_case_files(work: Path, files, symlinks, hardlinks) -> dict[str, bytes]:
+    initial = {}
+    for spec in files or []:
+        if not isinstance(spec, dict):
+            raise HarnessError("files entry is not an object")
+        path = safe_relpath(str(spec.get("path", "")))
+        target = work / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        data = spec_bytes(spec)
+        target.write_bytes(data)
+        initial[str(path)] = data
+    for spec in symlinks or []:
+        if not isinstance(spec, dict):
+            raise HarnessError("symlinks entry is not an object")
+        path = safe_relpath(str(spec.get("path", "")))
+        target = work / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        os.symlink(str(spec.get("target", "")), target)
+    for spec in hardlinks or []:
+        if not isinstance(spec, dict):
+            raise HarnessError("hardlinks entry is not an object")
+        path = safe_relpath(str(spec.get("path", "")))
+        target = safe_relpath(str(spec.get("target", "")))
+        link = work / path
+        link.parent.mkdir(parents=True, exist_ok=True)
+        os.link(work / target, link)
+    return initial
+
+
+def temp_files(work: Path) -> list[str]:
+    found = []
+    for p in work.rglob(".glon-tmp-*"):
+        found.append(str(p.relative_to(work)))
+    return found
+
+
+def run_program(glon: Path, program: Path, timeout: float, args=(), cwd=None) -> dict:
     started = time.monotonic()
     try:
         proc = subprocess.run(
-            [str(glon), str(program)],
+            [str(glon), *map(str, args), str(program)],
             capture_output=True,
             text=True,
             timeout=timeout,
-            cwd=str(program.parent),
+            cwd=str(cwd if cwd is not None else program.parent),
         )
         duration = int((time.monotonic() - started) * 1000)
         return {
@@ -93,7 +184,7 @@ def run_program(glon: Path, program: Path, timeout: float) -> dict:
         raise HarnessError(f"cannot execute {glon}: {exc}") from exc
 
 
-def classify(case: dict, observed: dict) -> str:
+def classify(case: dict, observed: dict, file_checks: list[dict] | None = None) -> str:
     if observed["status"] == "timeout":
         return "timeout"
     expected_exit = int(case.get("expected_exit", 0))
@@ -105,6 +196,12 @@ def classify(case: dict, observed: dict) -> str:
         return "exit_mismatch"
     if observed["stdout"] != expected_stdout:
         return "output_mismatch"
+    needle = case.get("expected_stderr_contains")
+    if needle and str(needle) not in (observed.get("stderr") or ""):
+        return "stderr_mismatch"
+    for check in file_checks or []:
+        if check.get("status") != "pass":
+            return check.get("status", "file_mismatch")
     return "pass"
 
 
@@ -113,7 +210,75 @@ def program_text(library_prefix: str, source: str, call: str, print_value: bool)
     return library_prefix + source.rstrip() + "\n" + statement + "\n"
 
 
-def run_case(glon: Path, source: str, case: dict, timeout: float, tmp: Path, library_prefix: str = "") -> dict:
+def file_checks_for_case(case: dict, work: Path, initial: dict[str, bytes]) -> list[dict]:
+    checks = []
+    expected_files = case.get("expected_files", [])
+    if isinstance(expected_files, dict):
+        expected_files = [expected_files]
+    for spec in expected_files or []:
+        path = str(spec.get("path", ""))
+        expected = spec_bytes(spec)
+        target = work / safe_relpath(path)
+        actual = target.read_bytes() if target.is_file() else None
+        checks.append({
+            "path": path,
+            "kind": "file",
+            "expected_size": len(expected),
+            "actual_size": len(actual) if actual is not None else None,
+            "status": "pass" if actual == expected else "file_mismatch",
+        })
+
+    expected_replace = case.get("expected_replace")
+    if expected_replace:
+        items = expected_replace if isinstance(expected_replace, list) else [expected_replace]
+        for spec in items:
+            path = str(spec.get("path", ""))
+            expected = replace_bytes(spec, initial)
+            target = work / safe_relpath(path)
+            actual = target.read_bytes() if target.is_file() else None
+            checks.append({
+                "path": path,
+                "kind": "replace",
+                "expected_size": len(expected),
+                "actual_size": len(actual) if actual is not None else None,
+                "status": "pass" if actual == expected else "file_mismatch",
+            })
+
+    for rel in case.get("expected_absent", []) or []:
+        path = str(rel)
+        target = work / safe_relpath(path)
+        checks.append({
+            "path": path,
+            "kind": "absent",
+            "status": "pass" if not target.exists() else "file_present",
+        })
+
+    for spec in case.get("expected_symlinks", []) or []:
+        path = str(spec.get("path", ""))
+        target = str(spec.get("target", ""))
+        link = work / safe_relpath(path)
+        ok = link.is_symlink() and os.readlink(link) == target
+        checks.append({
+            "path": path,
+            "kind": "symlink",
+            "target": target,
+            "status": "pass" if ok else "symlink_mismatch",
+        })
+
+    if case.get("expect_no_temp", True):
+        leftovers = temp_files(work)
+        checks.append({
+            "path": ".",
+            "kind": "temp_cleanup",
+            "leftovers": leftovers,
+            "status": "pass" if not leftovers else "temp_left",
+        })
+    return checks
+
+
+def run_case(glon: Path, source: str, case: dict, timeout: float, tmp: Path,
+             library_prefix: str = "", meta: dict | None = None) -> dict:
+    meta = meta or {}
     if not isinstance(case, dict):
         raise HarnessError("case entry is not an object")
     case_id = str(case.get("id", "unnamed"))
@@ -123,14 +288,46 @@ def run_case(glon: Path, source: str, case: dict, timeout: float, tmp: Path, lib
     if "expected_stdout" not in case:
         raise HarnessError(f"case {case_id} has no expected_stdout")
 
-    program = tmp / (case_id.replace("/", "_") + ".glon")
+    is_file = bool(meta.get("requires_file_module")) or any(
+        key in case for key in ("files", "expected_files", "expected_replace",
+                                "expected_absent", "expected_symlinks")
+    ) or bool(case.get("flags"))
+    safe_id = case_id.replace("/", "_")
+    if is_file:
+        case_root = tmp / safe_id
+        work = case_root / "work"
+        work.mkdir(parents=True, exist_ok=True)
+        initial = write_case_files(
+            work,
+            case.get("files", meta.get("files", [])),
+            case.get("symlinks", meta.get("symlinks", [])),
+            case.get("hardlinks", meta.get("hardlinks", [])),
+        )
+        program = case_root / "run.glon"
+        grants = case.get("grants", meta.get("io_grants", ["read", "write"]))
+        args = ["--io-root", str(work)]
+        if "read" in grants:
+            args.append("--allow-file-read")
+        if "write" in grants:
+            args.append("--allow-file-write")
+        args += [str(x) for x in case.get("flags", [])]
+        cwd = case_root
+    else:
+        work = None
+        initial = {}
+        program = tmp / (safe_id + ".glon")
+        args = []
+        cwd = tmp
+
     program.write_text(
         program_text(library_prefix, source, call, bool(case.get("print", True))),
         encoding="utf-8",
     )
-    observed = run_program(glon, program, timeout)
-    status = classify(case, observed)
-    return {
+    case_timeout = float(case.get("timeout", timeout))
+    observed = run_program(glon, program, case_timeout, args, cwd)
+    file_checks = file_checks_for_case(case, work, initial) if is_file else []
+    status = classify(case, observed, file_checks)
+    result = {
         "id": case_id,
         "call": call,
         "reference": case.get("reference", ""),
@@ -142,7 +339,9 @@ def run_case(glon: Path, source: str, case: dict, timeout: float, tmp: Path, lib
         "duration_ms": observed["duration_ms"],
         "status": status,
     }
-
+    if file_checks:
+        result["file_checks"] = file_checks
+    return result
 
 def run_probe(glon: Path, source: str, probe: dict, timeout: float, tmp: Path, library_prefix: str = "") -> dict:
     probe_id = str(probe.get("id", "probe"))
@@ -235,7 +434,7 @@ def challenge_result(glon: Path, challenge_dir: Path, timeout: float, run_probes
         tmp = Path(td)
         for case in cases:
             try:
-                results.append(run_case(glon, source, case, timeout, tmp, library_prefix))
+                results.append(run_case(glon, source, case, timeout, tmp, library_prefix, meta))
             except HarnessError as exc:
                 harness_error = True
                 results.append({
@@ -280,6 +479,10 @@ def challenge_result(glon: Path, challenge_dir: Path, timeout: float, run_probes
             "harness_errors": sum(1 for r in results if r.get("status") == "harness_error"),
         },
         "implementation_status": meta.get("implementation_status", "verified"),
+        "requires_file_module": bool(meta.get("requires_file_module")),
+        "source_layer": meta.get("source_layer", "implementation"),
+        "history": meta.get("history", []),
+        "performance": meta.get("performance"),
         "blocker": meta.get("blocker", ""),
         "host_dependency": meta.get("host_dependency", ""),
         "libraries": meta.get("libraries", []),

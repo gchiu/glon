@@ -1,77 +1,111 @@
 {
-  "schema": 1,
+  "schema": 2,
   "challenge": "file-replace",
-  "title": "File Text Replacement (partial)",
-  "entry": "replace-first",
+  "title": "File Text Replacement",
+  "entry": "cookbook/replace-first",
   "source": "replace.glon",
   "libraries": [
-    "vendor/strings-ext.glon"
+    "vendor/find.glon",
+    "vendor/u32.glon",
+    "vendor/file-stream-masm.glon",
+    "vendor/file-atomic.glon",
+    "vendor/file-replace.glon"
   ],
-  "implementation_status": "partial",
-  "domain": "In-memory STRING! text only; no file read/write capability is available in the pinned native Glon CLI.",
-  "description": "Partial implementation of the REBOL 2 Cookbook file text replacement program. The in-memory first-occurrence replacement is implemented in Glon; the file read/write round trip is blocked by missing host I/O.",
-  "attribution": "Original REBOL 2 Cookbook recipe 'Replace Text in a File' by Carl Sassenrath (archived recipe linked in the reference source pane). The partial Glon implementation is original for this challenge.",
-  "reference": "REBOL replace changes only the first occurrence of the target string and leaves later occurrences unchanged. The six cases below test beginning, middle, end, no match, multiple matches and empty text.",
-  "blocker": "Complete file operation cannot be reproduced with the pinned native `glon` CLI and published vocabulary. The CLI has no file read/write words; the WASM host has no filesystem; the desktop GLON_LIVE proof exposes an asynchronous fs-read request/reply but no general Glon file-write binding. No host-side replacement or file processing is substituted.",
-  "host_dependency": "None available for complete operation. A future complete challenge would require documented Glon file read and write capabilities.",
-  "cases": [
-    {
-      "id": "beginning",
-      "call": "s/print replace-first \"web site\" \"web\" \"rebol\"",
-      "print": false,
-      "expected_exit": 0,
-      "expected_stdout": "rebol site\n",
-      "reference": "First occurrence at the beginning."
-    },
-    {
-      "id": "middle",
-      "call": "s/print replace-first \"the web is wide\" \"web\" \"rebol\"",
-      "print": false,
-      "expected_exit": 0,
-      "expected_stdout": "the rebol is wide\n",
-      "reference": "First occurrence in the middle."
-    },
-    {
-      "id": "end",
-      "call": "s/print replace-first \"the web\" \"web\" \"rebol\"",
-      "print": false,
-      "expected_exit": 0,
-      "expected_stdout": "the rebol\n",
-      "reference": "First occurrence at the end."
-    },
-    {
-      "id": "no-match",
-      "call": "s/print replace-first \"the internet\" \"web\" \"rebol\"",
-      "print": false,
-      "expected_exit": 0,
-      "expected_stdout": "the internet\n",
-      "reference": "No occurrence; text is unchanged."
-    },
-    {
-      "id": "multiple",
-      "call": "s/print replace-first \"web web web\" \"web\" \"rebol\"",
-      "print": false,
-      "expected_exit": 0,
-      "expected_stdout": "rebol web web\n",
-      "reference": "Only the first of several occurrences changes."
-    },
-    {
-      "id": "empty",
-      "call": "s/print replace-first \"\" \"web\" \"rebol\"",
-      "print": false,
-      "expected_exit": 0,
-      "expected_stdout": "\n",
-      "reference": "Empty file text remains empty; s/print adds a newline."
-    }
+  "implementation_status": "verified",
+  "requires_file_module": true,
+  "io_grants": [
+    "read",
+    "write"
   ],
-  "resource_probes": [],
+  "source_layer": "application",
+  "domain": "Safe original-path replacement of a file that may be larger than the managed heap.",
+  "description": "Complete REBOL Cookbook recipe 0004: read an existing file, replace the first occurrence of a byte sequence, and atomically replace the original path. The host supplies general asynchronous filesystem operations; the replacement algorithm is Glon. Source and intermediate temporary data are streamed in bounded chunks.",
+  "attribution": "Original REBOL 2 Cookbook recipe 'Replace Text in a File' by Carl Sassenrath (archived recipe linked in the reference source pane). The Glon implementation and reusable vocabulary are original for this challenge.",
+  "reference": "REBOL replace changes only the first occurrence and the original program writes the result back to the same path. The cases use independently generated expected bytes from Python bytes.replace(old, new, 1), including failure cases that must leave the original unchanged.",
+  "history": [
+    "Previous published result: partial in-memory implementation. The pinned CLI had no file read/write vocabulary, so the original file round trip was not reproduced; six in-memory cases passed.",
+    "This result: the optional file module is built with MODULES=file, and a protocol-v2 temp/commit/discard service plus reusable file/replace-first vocabulary complete the original-path operation. The previous partial result is superseded but retained here and in Git history."
+  ],
+  "performance": {
+    "note": "Measured in the engineering integration worktree on WSL2 with the native -O0 build. Wall times are host-load sensitive; expected bytes and temp cleanup were verified. Managed heap capacity is 7,232 cells.",
+    "managed_heap_cells": 7232,
+    "rows": [
+      {
+        "size": "1 KiB",
+        "case": "match",
+        "seconds": 0.1,
+        "gc_collections": 1,
+        "post_collection_live_cells": 3648,
+        "peak_rss_kb": 2336
+      },
+      {
+        "size": "1 KiB",
+        "case": "no match",
+        "seconds": 0.09,
+        "gc_collections": 1,
+        "post_collection_live_cells": 3952,
+        "peak_rss_kb": 2528
+      },
+      {
+        "size": "64 KiB",
+        "case": "match",
+        "seconds": 3.2,
+        "gc_collections": 82,
+        "post_collection_live_cells": 3680,
+        "peak_rss_kb": 2272
+      },
+      {
+        "size": "64 KiB",
+        "case": "no match",
+        "seconds": 3.56,
+        "gc_collections": 82,
+        "post_collection_live_cells": 2608,
+        "peak_rss_kb": 2272
+      },
+      {
+        "size": "1 MiB",
+        "case": "match",
+        "seconds": 55.28,
+        "gc_collections": 1311,
+        "post_collection_live_cells": 2624,
+        "peak_rss_kb": 2136
+      },
+      {
+        "size": "1 MiB",
+        "case": "no match",
+        "seconds": 51.1,
+        "gc_collections": 1311,
+        "post_collection_live_cells": 2640,
+        "peak_rss_kb": 2336
+      },
+      {
+        "size": "4 MiB",
+        "case": "match",
+        "seconds": 203.19,
+        "gc_collections": 5243,
+        "post_collection_live_cells": 2464,
+        "peak_rss_kb": 2140
+      },
+      {
+        "size": "4 MiB",
+        "case": "no match",
+        "seconds": 195.44,
+        "gc_collections": 5243,
+        "post_collection_live_cells": 2592,
+        "peak_rss_kb": 2464
+      }
+    ]
+  },
   "known_limitations": [
-    "Only the in-memory string replacement is implemented and tested. The original four-line REBOL program's file read/write round trip is not reproduced.",
-    "The pinned native glon CLI treats arguments as Glon source files and exposes no file I/O vocabulary.",
-    "The browser/WASM host has no filesystem. The desktop proof exposes fs-read but no general Glon file-write binding.",
-    "The partial implementation uses the published optional strings-ext library (s/slice) plus s/+, s/= and s/length. The vendored strings-ext.glon is an exact copy from the pinned upstream commit.",
-    "No C, Python, shell or host-side text replacement is used. No language or runtime extension was added.",
-    "An empty search pattern is outside this challenge's tested contract."
+    "POSIX-only optional file backend; no WASM, Windows or embedded file backend.",
+    "Atomic replacement is process-level, not power-loss durable: no file or directory fsync is performed.",
+    "Ownership, group, ACLs, xattrs and timestamps are not preserved; source permission bits are.",
+    "A symlink final component is rejected. Other hard links keep the old content after replacement.",
+    "Concurrent source modification is detected best-effort from device/inode/size/mtime/mode; there is no locking or content hash.",
+    "Cancellation is cooperative at request boundaries; a commit already executing may complete atomically.",
+    "A forcibly killed process can leave a .glon-tmp-* file; normal failure/cleanup paths remove it.",
+    "The managed heap is fixed at 7,232 cells; GC time grows with file size even though live memory stays bounded.",
+    "Full ./s1 still stalls in the documented long simulation tests; the non-simulation runner passes. WASM tests were not run because emcc was unavailable."
   ],
   "reference_implementation": {
     "language": "REBOL 2",
@@ -79,31 +113,635 @@
     "title": "Replace Text in a File \u2014 original REBOL 2 Cookbook program",
     "attribution": "Author: Carl Sassenrath. REBOL Cookbook, recipe 0004, 'Replace Text in a File'.",
     "url": "https://web.archive.org/web/20250320233703/http://www.rebol.net/cookbook/recipes/0004.html",
-    "notes": "Reads %doc.txt, replaces the first occurrence of \"web\" with \"rebol\", and writes the modified contents back to the same file."
+    "notes": "Reads %doc.txt, replaces the first occurrence of \"web\" with \"rebol\", and writes the modified contents back to %doc.txt."
   },
   "implementation_comparison": {
     "layers": [
       {
         "layer": "1. Core operations and primitives",
-        "rebol": "REBOL 2 provides its own runtime and series/file facilities. This comparison does not assert which of read, replace or write are core primitives in REBOL 2.",
-        "glon": "Frozen S1 has seven primitives and the R0 evaluator has no file or replace primitive. In-memory string operations are library code.",
+        "rebol": "REBOL 2 provides its own runtime and series/file facilities. This comparison does not assert which of read, replace or write are core primitives.",
+        "glon": "Frozen S1 has seven primitives and the R0 evaluator has no file or replace primitive. The host file service moves bytes and performs general temp/commit/discard operations; replacement semantics are library code.",
         "note": "Different substrate layers; no source-size comparison."
       },
       {
         "layer": "2. Mezzanine/library functions",
         "rebol": "replace is a mezzanine in Oldes' Rebol 3 at src/mezz/mezz-series.reb:129. This does not establish the exact implementation or provenance of REBOL 2's replace.",
-        "glon": "replace-first is a reusable Glon library implementation over s/slice, s/+, s/= and s/length. It implements first-occurrence replacement on in-memory strings only.",
-        "glon_source_size": true,
-        "note": "The Glon listing is a library function, not an application equivalent."
+        "glon": "s/replace-first, stream/replace-first-to and file/replace-first are reusable Glon library code. file/replace-first composes first-occurrence replacement with same-directory temporary output and atomic commit. MASM-1 search and MASM-2 request encoding are loaded from vendored libraries.",
+        "note": "Library layer, not application equivalent."
       },
       {
         "layer": "3. Application code",
-        "rebol": "The Cookbook application reads a file, invokes the existing replace mezzanine, and writes the same file.",
-        "glon": "No complete application is implemented. File read/write is unavailable in the pinned native CLI; only an in-memory partial replacement job is tested.",
+        "rebol": "The Cookbook application is four lines: read a file, call the existing replace mezzanine, and write the same file.",
+        "glon": "cookbook/replace-first invokes the reusable file/replace-first operation with the Cookbook path and strings, plus honest asynchronous success/failure callbacks.",
         "rebol_source_size": true,
-        "note": "This is where the implementations differ: REBOL has file I/O; Glon does not."
+        "glon_source_size": true,
+        "note": "Both listings are application code. The Glon application composes a reusable library; it does not reproduce REBOL syntax or mutate immutable strings."
       }
     ],
-    "notice": "Source sizes are factual metadata labelled by abstraction layer. They do not compare equivalent implementation layers and are not a concision claim. REBOL's application listing uses existing read/replace/write facilities; Glon's listing is a reusable library function and its file application is incomplete."
-  }
+    "notice": "Source sizes are factual metadata labelled by abstraction layer. The REBOL listing uses existing read/replace/write facilities; the Glon listing composes a reusable library and an optional host file service. This is not a concision claim."
+  },
+  "cases": [
+    {
+      "id": "cookbook-original-path",
+      "call": "cookbook/replace-first",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "the web is wide"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "COOKBOOK_DONE\n",
+      "expected_exit": 0,
+      "reference": "The original four-line REBOL program reads doc.txt, replaces the first 'web' with 'rebol', and writes doc.txt.",
+      "print": false
+    },
+    {
+      "id": "match-beginning",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "web site"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "First occurrence at the beginning.",
+      "print": false
+    },
+    {
+      "id": "match-middle",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "the web is wide"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "First occurrence in the middle.",
+      "print": false
+    },
+    {
+      "id": "match-end",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "First occurrence at the end.",
+      "print": false
+    },
+    {
+      "id": "multiple-first-only",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "web web web"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "Only the first of several occurrences changes.",
+      "print": false
+    },
+    {
+      "id": "no-match",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "the internet"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "No occurrence; the file is rewritten with identical bytes.",
+      "print": false
+    },
+    {
+      "id": "empty-file",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": ""
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "An empty file remains empty.",
+      "print": false
+    },
+    {
+      "id": "empty-replacement",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "a web b web"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": ""
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "An empty replacement removes the first occurrence.",
+      "print": false
+    },
+    {
+      "id": "longer-replacement",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol-rebol-rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "a web b"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol-rebol-rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "A longer replacement grows the file.",
+      "print": false
+    },
+    {
+      "id": "empty-search-rejected",
+      "call": "file/replace-first \"doc.txt\" \"\" \"x\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "web site"
+        }
+      ],
+      "expected_files": [
+        {
+          "path": "doc.txt",
+          "text": "web site"
+        }
+      ],
+      "expected_stdout": "",
+      "expected_exit": 1,
+      "expected_stderr_contains": "empty-pattern",
+      "reference": "An empty search pattern is outside the documented contract and raises before changing the file.",
+      "print": false
+    },
+    {
+      "id": "binary-content",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "hex": "0077656280ff207461696c"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "NUL and high bytes outside the match are preserved.",
+      "print": false
+    },
+    {
+      "id": "binary-pattern-and-replacement",
+      "call": "file/replace-first \"doc.txt\" mk-string [ 0 1 ] mk-string [ 255 254 ] func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "hex": "6c6566740001726967687400017461696c"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_hex": "0001",
+        "new_hex": "fffe"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "Arbitrary binary pattern and replacement bytes; no string/binary conversion.",
+      "print": false
+    },
+    {
+      "id": "chunk-boundary",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaawebbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "The match crosses the 400-byte streaming boundary.",
+      "print": false
+    },
+    {
+      "id": "short-reads-writes",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "flags": [
+        "--io-short",
+        "3"
+      ],
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "prefix web suffix zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "Short reads and writes are looped, not truncated.",
+      "print": false
+    },
+    {
+      "id": "missing-file",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [],
+      "expected_absent": [
+        "doc.txt"
+      ],
+      "expected_stdout": "",
+      "expected_exit": 1,
+      "expected_stderr_contains": "not-found",
+      "reference": "A missing source is a recoverable SIN!; no temp is left.",
+      "print": false
+    },
+    {
+      "id": "read-capability-denied",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "grants": [
+        "write"
+      ],
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_stdout": "",
+      "expected_exit": 1,
+      "expected_stderr_contains": "permission",
+      "reference": "Without the read grant the source cannot be opened; it is unchanged.",
+      "print": false
+    },
+    {
+      "id": "write-capability-denied",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "grants": [
+        "read"
+      ],
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_stdout": "",
+      "expected_exit": 1,
+      "expected_stderr_contains": "permission",
+      "reference": "Without the write grant no temp can be created; the source is unchanged.",
+      "print": false
+    },
+    {
+      "id": "out-of-root",
+      "call": "file/replace-first \"../doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_stdout": "",
+      "expected_exit": 1,
+      "expected_stderr_contains": "permission",
+      "reference": "Path traversal outside --io-root is rejected.",
+      "print": false
+    },
+    {
+      "id": "write-failure-host-cap",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "flags": [
+        "--io-max-file",
+        "10"
+      ],
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      ],
+      "expected_files": [
+        {
+          "path": "doc.txt",
+          "text": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        }
+      ],
+      "expected_stdout": "",
+      "expected_exit": 1,
+      "expected_stderr_contains": "too-large",
+      "reference": "A host write cap failure leaves the original unchanged and removes the temp.",
+      "print": false
+    },
+    {
+      "id": "close-failure",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "flags": [
+        "--io-fail-close"
+      ],
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_stdout": "",
+      "expected_exit": 1,
+      "expected_stderr_contains": "io-error",
+      "reference": "An injected close failure prevents commit; original unchanged, temp removed.",
+      "print": false
+    },
+    {
+      "id": "rename-failure",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "flags": [
+        "--io-fail-rename"
+      ],
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_stdout": "",
+      "expected_exit": 1,
+      "expected_stderr_contains": "io-error",
+      "reference": "An injected rename failure prevents replacement; original unchanged, temp removed.",
+      "print": false
+    },
+    {
+      "id": "cancellation",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "flags": [
+        "--io-cancel-before-reply"
+      ],
+      "files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_files": [
+        {
+          "path": "doc.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_stdout": "",
+      "expected_exit": 1,
+      "expected_stderr_contains": "cancel",
+      "reference": "Cancellation before a reply does not replace the original.",
+      "print": false
+    },
+    {
+      "id": "symlink-source",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "real.txt",
+          "text": "the web"
+        }
+      ],
+      "symlinks": [
+        {
+          "path": "doc.txt",
+          "target": "real.txt"
+        }
+      ],
+      "expected_files": [
+        {
+          "path": "real.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_symlinks": [
+        {
+          "path": "doc.txt",
+          "target": "real.txt"
+        }
+      ],
+      "expected_stdout": "",
+      "expected_exit": 1,
+      "expected_stderr_contains": "permission",
+      "reference": "A symlink final component is rejected; the target file and link are unchanged.",
+      "print": false
+    },
+    {
+      "id": "hardlink-source",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "files": [
+        {
+          "path": "original.txt",
+          "text": "the web"
+        }
+      ],
+      "hardlinks": [
+        {
+          "path": "doc.txt",
+          "target": "original.txt"
+        }
+      ],
+      "expected_files": [
+        {
+          "path": "doc.txt",
+          "text": "the rebol"
+        },
+        {
+          "path": "original.txt",
+          "text": "the web"
+        }
+      ],
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "Replacing the original path breaks the hard link; the other link keeps old content.",
+      "print": false
+    },
+    {
+      "id": "size-1024",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "timeout": 120,
+      "files": [
+        {
+          "path": "doc.txt",
+          "byte": 120,
+          "count": 1021,
+          "prefix_text": "web"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "Representative 1024-byte file with the match at the beginning; bounded streaming and exact output.",
+      "print": false
+    },
+    {
+      "id": "size-65536",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "timeout": 120,
+      "files": [
+        {
+          "path": "doc.txt",
+          "byte": 120,
+          "count": 65533,
+          "prefix_text": "web"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "Representative 65536-byte file with the match at the beginning; bounded streaming and exact output.",
+      "print": false
+    },
+    {
+      "id": "size-1048576",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "timeout": 600,
+      "files": [
+        {
+          "path": "doc.txt",
+          "byte": 120,
+          "count": 1048573,
+          "prefix_text": "web"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "Representative 1048576-byte file with the match at the beginning; bounded streaming and exact output.",
+      "print": false
+    },
+    {
+      "id": "size-4194304",
+      "call": "file/replace-first \"doc.txt\" \"web\" \"rebol\" func [x] [ s/print \"REPLACE_DONE\" ] func [e] [ raise e ]",
+      "timeout": 600,
+      "files": [
+        {
+          "path": "doc.txt",
+          "byte": 120,
+          "count": 4194301,
+          "prefix_text": "web"
+        }
+      ],
+      "expected_replace": {
+        "path": "doc.txt",
+        "old_text": "web",
+        "new_text": "rebol"
+      },
+      "expected_stdout": "REPLACE_DONE\n",
+      "expected_exit": 0,
+      "reference": "Representative 4194304-byte file with the match at the beginning; bounded streaming and exact output.",
+      "print": false
+    }
+  ]
 }
