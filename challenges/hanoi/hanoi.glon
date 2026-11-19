@@ -1,0 +1,15 @@
+;; hanoi.glon -- recursive Towers of Hanoi move sequence.
+;;
+;; `hanoi n source target spare` prints one move per line. The three peg names
+;; are ordinary STRING! values; the proposed example uses "A", "C", "B".
+;; This is the proposed implementation: ordinary Glon func/either, comparison,
+;; arithmetic, s/+ and s/print, with no primitives or vocabulary changes.
+hanoi: func [n source target spare] [
+    either > n 0 [
+        hanoi - n 1 source spare target
+        s/print s/+ source s/+ " -> " target
+        hanoi - n 1 spare target source
+    ] [
+        none
+    ]
+]
