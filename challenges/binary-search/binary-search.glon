@@ -1,0 +1,38 @@
+;; binary-search.glon -- zero-based binary search over an ascending integer block.
+;;
+;; Contract: `items` is a block sorted ascending; `target` is an integer.
+;; Returns a zero-based matching index, or -1 when absent. For duplicates any
+;; matching index is acceptable. The input block is only read.
+;;
+;; The proposed implementation is used unchanged. `block-len` returns a tagged
+;; integer and `block-at` is zero-based; both are existing prelude operations.
+;; The acceptance helper below maps an index back to its element so duplicate
+;; cases can verify a matching value without requiring one particular index.
+binary-search-range: func [items target low high] [
+    either > low high [
+        -1
+    ] [
+        mid: + low / - high low 2
+        value: block-at items mid
+
+        either = value target [
+            mid
+        ] [
+            either < value target [
+                binary-search-range items target + mid 1 high
+            ] [
+                binary-search-range items target low - mid 1
+            ]
+        ]
+    ]
+]
+
+binary-search: func [items target] [
+    binary-search-range items target 0 - block-len items 1
+]
+
+;; Acceptance helper for duplicate blocks: returns the matching element or -1.
+binary-search-found: func [items target] [
+    idx: binary-search items target
+    either < idx 0 [ -1 ] [ block-at items idx ]
+]
