@@ -1,0 +1,24 @@
+;; palindrome.glon -- exact, case-sensitive byte palindrome detection.
+;;
+;; The proposed implementation used the words `true` and `false`; those words
+;; are not bound in the pinned Glon prelude, so the verified implementation
+;; returns the existing Glon Boolean convention 1 (true) / 0 (false).
+;;
+;; Indexing is inclusive: left starts at 0 and right starts at length-1.
+;; s/raw-at returns one byte as an integer, so comparison is exact and
+;; case-sensitive with no Unicode normalisation or case folding.
+palindrome-range?: func [text left right] [
+    either >= left right [
+        1
+    ] [
+        either = s/raw-at text left s/raw-at text right [
+            palindrome-range? text + left 1 - right 1
+        ] [
+            0
+        ]
+    ]
+]
+
+palindrome?: func [text] [
+    palindrome-range? text 0 - s/length text 1
+]
