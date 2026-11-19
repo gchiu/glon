@@ -1,0 +1,395 @@
+{
+  "schema": 1,
+  "challenge": "palindrome",
+  "title": "Palindrome Detection",
+  "family": "Rosetta Code",
+  "entry": "palindrome?",
+  "source": "palindrome.glon",
+  "domain": "STRING! values compared as exact, case-sensitive bytes; no Unicode normalisation or case folding.",
+  "description": "Return 1 when a STRING! reads the same in both directions, else 0. The proposed implementation used the unbound words true/false; the verified version uses Glon's existing 1/0 Boolean convention. Comparison is exact byte equality, not REBOL's default case-insensitive string equality and not character-aware Unicode reversal.",
+  "attribution": "Problem and REBOL reference: Rosetta Code, 'Palindrome detection' (https://rosettacode.org/wiki/Palindrome_detection). The REBOL listing is the extended published solution shown on that page; the Glon implementation is the proposed version with the Boolean correction.",
+  "reference": "Expected values are generated independently by Python byte-sequence reversal (b == b[::-1]), including case-sensitive text, binary-safe NUL/high-byte cases and deterministic random byte strings.",
+  "family_note": "Rosetta Code challenge; separate from REBOL Cookbook challenges.",
+  "cases": [
+    {
+      "id": "text-empty",
+      "call": "print palindrome? \"\"",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Exact case-sensitive bytes for ''; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-a",
+      "call": "print palindrome? mk-string [ 97 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Exact case-sensitive bytes for 'a'; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-aa",
+      "call": "print palindrome? mk-string [ 97 97 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Exact case-sensitive bytes for 'aa'; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-ab",
+      "call": "print palindrome? mk-string [ 97 98 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Exact case-sensitive bytes for 'ab'; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-aba",
+      "call": "print palindrome? mk-string [ 97 98 97 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Exact case-sensitive bytes for 'aba'; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-abba",
+      "call": "print palindrome? mk-string [ 97 98 98 97 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Exact case-sensitive bytes for 'abba'; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-racecar",
+      "call": "print palindrome? mk-string [ 114 97 99 101 99 97 114 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Exact case-sensitive bytes for 'racecar'; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-redivider",
+      "call": "print palindrome? mk-string [ 114 101 100 105 118 105 100 101 114 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Exact case-sensitive bytes for 'redivider'; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-glon",
+      "call": "print palindrome? mk-string [ 103 108 111 110 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Exact case-sensitive bytes for 'glon'; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-rebol",
+      "call": "print palindrome? mk-string [ 114 101 98 111 108 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Exact case-sensitive bytes for 'rebol'; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-Racecar",
+      "call": "print palindrome? mk-string [ 82 97 99 101 99 97 114 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Exact case-sensitive bytes for 'Racecar'; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-never-odd-or-even",
+      "call": "print palindrome? mk-string [ 110 101 118 101 114 32 111 100 100 32 111 114 32 101 118 101 110 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Exact case-sensitive bytes for 'never odd or even'; expected from Python bytes reversal."
+    },
+    {
+      "id": "text-neveroddoreven",
+      "call": "print palindrome? mk-string [ 110 101 118 101 114 111 100 100 111 114 101 118 101 110 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Exact case-sensitive bytes for 'neveroddoreven'; expected from Python bytes reversal."
+    },
+    {
+      "id": "binary-nul-palindrome",
+      "call": "print palindrome? mk-string [ 0 255 255 0 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "NUL/high-byte palindrome."
+    },
+    {
+      "id": "binary-nul-nonpalindrome",
+      "call": "print palindrome? mk-string [ 0 1 2 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "NUL-containing non-palindrome."
+    },
+    {
+      "id": "binary-high-byte",
+      "call": "print palindrome? mk-string [ 128 254 128 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "High-byte palindrome; no UTF-8 decoding."
+    },
+    {
+      "id": "binary-mixed",
+      "call": "print palindrome? mk-string [ 97 0 98 0 97 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Mixed text/NUL palindrome."
+    },
+    {
+      "id": "random-00",
+      "call": "print palindrome? mk-string [ 21 218 209 237 92 32 219 237 50 74 190 130 31 76 191 217 174 58 109 209 192 141 56 22 129 74 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-01",
+      "call": "print palindrome? mk-string [ 88 143 183 71 21 12 41 136 143 194 98 166 89 215 22 46 198 149 69 249 159 50 95 208 89 250 190 162 73 119 232 10 214 114 111 152 7 245 160 60 148 38 150 22 164 74 57 26 153 148 152 157 65 167 127 234 136 142 133 82 127 157 67 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-02",
+      "call": "print palindrome? mk-string [ 68 125 101 65 86 43 56 138 225 78 160 112 115 250 46 24 19 197 124 210 181 217 56 53 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-03",
+      "call": "print palindrome? mk-string [ 9 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-04",
+      "call": "print palindrome? mk-string [ 60 8 220 86 53 112 195 46 211 38 146 92 205 36 122 247 17 118 16 81 139 36 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-05",
+      "call": "print palindrome? mk-string [ 107 220 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-06",
+      "call": "print palindrome? mk-string [ 140 231 36 49 154 95 192 216 204 72 55 99 147 162 88 40 35 202 251 169 230 11 165 18 232 110 203 199 117 0 204 106 106 71 198 61 218 88 127 184 239 106 137 83 238 204 42 59 191 174 53 194 91 122 157 236 127 206 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-07",
+      "call": "print palindrome? mk-string [ 143 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-08",
+      "call": "print palindrome? mk-string [ 46 37 140 247 35 122 129 32 163 132 136 49 134 59 108 127 101 29 85 56 197 186 62 41 69 221 114 255 85 102 72 235 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-09",
+      "call": "print palindrome? mk-string [ 40 50 195 40 33 114 155 111 173 99 210 163 44 16 89 81 164 27 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-10",
+      "call": "print palindrome? mk-string [ 147 252 167 106 55 251 199 114 180 227 251 96 189 81 72 11 74 18 39 180 55 113 136 242 228 140 32 15 63 220 116 182 12 172 51 148 88 170 204 3 164 146 14 141 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-11",
+      "call": "print palindrome? mk-string [ 85 188 245 5 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-12",
+      "call": "print palindrome? mk-string [ 200 205 133 184 31 48 69 42 222 135 99 231 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-13",
+      "call": "print palindrome? mk-string [ 227 212 106 133 2 218 125 205 91 15 161 178 80 91 190 27 172 68 108 63 87 33 104 221 26 13 169 251 127 67 70 200 116 136 178 111 234 126 70 161 58 35 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-14",
+      "call": "print palindrome? mk-string [ 43 254 10 85 20 76 249 203 234 187 38 156 174 233 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-15",
+      "call": "print palindrome? mk-string [ 63 75 33 206 161 104 120 127 42 241 182 57 191 18 251 49 37 178 48 7 176 134 241 179 88 6 21 180 246 108 29 108 24 186 9 71 34 27 152 7 55 80 232 178 91 250 226 159 176 172 222 5 214 37 3 102 92 117 194 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-16",
+      "call": "print palindrome? \"\"",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-17",
+      "call": "print palindrome? mk-string [ 203 12 93 164 196 115 194 244 181 67 59 87 243 94 244 138 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-18",
+      "call": "print palindrome? mk-string [ 87 100 146 136 151 149 83 3 215 156 179 95 108 101 251 160 34 193 182 95 86 79 51 111 53 237 109 136 209 50 108 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "random-19",
+      "call": "print palindrome? mk-string [ 166 120 59 64 221 29 172 133 119 16 180 70 14 108 44 189 206 224 37 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic random byte sequence; expected from Python bytes reversal."
+    },
+    {
+      "id": "constructed-palindrome-3",
+      "call": "print palindrome? mk-string [ 106 113 106 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Constructed byte palindrome; expected from Python bytes reversal."
+    },
+    {
+      "id": "constructed-palindrome-8",
+      "call": "print palindrome? mk-string [ 234 169 158 253 253 158 169 234 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Constructed byte palindrome; expected from Python bytes reversal."
+    },
+    {
+      "id": "constructed-palindrome-15",
+      "call": "print palindrome? mk-string [ 50 249 131 86 189 22 24 64 24 22 189 86 131 249 50 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Constructed byte palindrome; expected from Python bytes reversal."
+    },
+    {
+      "id": "constructed-palindrome-31",
+      "call": "print palindrome? mk-string [ 221 227 230 170 114 203 45 91 73 240 174 122 209 152 101 179 101 152 209 122 174 240 73 91 45 203 114 170 230 227 221 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Constructed byte palindrome; expected from Python bytes reversal."
+    },
+    {
+      "id": "constructed-palindrome-64",
+      "call": "print palindrome? mk-string [ 65 138 160 83 91 252 173 107 220 5 234 16 100 252 40 84 195 1 233 33 243 180 23 160 112 109 98 132 168 59 158 181 181 158 59 168 132 98 109 112 160 23 180 243 33 233 1 195 84 40 252 100 16 234 5 220 107 173 252 91 83 160 138 65 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Constructed byte palindrome; expected from Python bytes reversal."
+    },
+    {
+      "id": "constructed-palindrome-160",
+      "call": "print palindrome? mk-string [ 100 29 125 55 230 1 128 128 164 226 174 202 234 98 174 54 63 58 118 238 230 221 98 111 160 249 218 156 137 15 1 238 217 39 62 42 69 231 160 80 230 234 107 220 51 42 252 63 11 162 79 195 251 110 28 219 41 60 184 118 70 180 162 54 134 10 143 235 34 56 210 211 120 253 112 32 22 236 80 120 120 80 236 22 32 112 253 120 211 210 56 34 235 143 10 134 54 162 180 70 118 184 60 41 219 28 110 251 195 79 162 11 63 252 42 51 220 107 234 230 80 160 231 69 42 62 39 217 238 1 15 137 156 218 249 160 111 98 221 230 238 118 58 63 54 174 98 234 202 174 226 164 128 128 1 230 55 125 29 100 ]",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Constructed byte palindrome; expected from Python bytes reversal."
+    }
+  ],
+  "resource_probes": [
+    {
+      "id": "palindrome-200-bytes",
+      "call": "print palindrome? mk-string [ 3 10 17 24 31 38 45 52 59 66 73 80 87 94 101 108 115 122 129 136 143 150 157 164 171 178 185 192 199 206 213 220 227 234 241 248 255 6 13 20 27 34 41 48 55 62 69 76 83 90 97 104 111 118 125 132 139 146 153 160 167 174 181 188 195 202 209 216 223 230 237 244 251 2 9 16 23 30 37 44 51 58 65 72 79 86 93 100 107 114 121 128 135 142 149 156 163 170 177 184 184 177 170 163 156 149 142 135 128 121 114 107 100 93 86 79 72 65 58 51 44 37 30 23 16 9 2 251 244 237 230 223 216 209 202 195 188 181 174 167 160 153 146 139 132 125 118 111 104 97 90 83 76 69 62 55 48 41 34 27 20 13 6 255 248 241 234 227 220 213 206 199 192 185 178 171 164 157 150 143 136 129 122 115 108 101 94 87 80 73 66 59 52 45 38 31 24 17 10 3 ]",
+      "print": false,
+      "observed": "exit 1; machine halt before output (return-stack exhaustion); no SIN!",
+      "note": "Recursive-depth probe. A 160-byte constructed palindrome passes; 200 bytes (100 recursive pairs) fail-stops. Not a correctness case and not a search for the maximum."
+    }
+  ],
+  "known_limitations": [
+    "The proposed true/false words are not bound in the pinned prelude; the verified implementation returns 1/0, the existing Glon Boolean convention.",
+    "Glon compares exact bytes with s/raw-at. REBOL's extended palindrome? defaults to case-insensitive string equality and only uses exact comparison with /case; REBOL reverse operates on characters, while Glon works on bytes. No Unicode normalisation or case folding is added.",
+    "Recursive depth grows by one activation per compared pair. A 160-byte palindrome passes; a 200-byte palindrome fail-stops with return-stack exhaustion (machine halt, not SIN!).",
+    "The page's separate minimalistic REBOL one-liner is malformed/truncated as published; the extended valid solution is the reference."
+  ],
+  "reference_implementation": {
+    "language": "REBOL 2",
+    "source": "reference.reb",
+    "title": "Palindrome detection \u2014 extended REBOL solution shown on Rosetta Code",
+    "attribution": "Rosetta Code, Palindrome detection, REBOL solution (https://rosettacode.org/wiki/Palindrome_detection).",
+    "url": "https://rosettacode.org/wiki/Palindrome_detection",
+    "notes": "Extended solution with /case exact comparison and /ignore inexact detection, plus the published test suite."
+  },
+  "implementation_comparison": {
+    "rebol": {
+      "observable_behaviour": "palindrome? uses case-insensitive string equality by default; palindrome?/case uses exact comparison; inexact-palindrome? ignores selected punctuation/space characters.",
+      "facilities": "func refinements, ==/= string comparison, reverse, copy, charset, parse and all from REBOL 2.",
+      "test_status": "The extended published listing is preserved verbatim as reference source. It was not executed here; there is no REBOL 2 runtime in this repository."
+    },
+    "glon": {
+      "observable_behaviour": "Returns 1/0 for exact, case-sensitive byte equality; no inexact/punctuation- ignoring variant is introduced.",
+      "facilities": "Ordinary Glon func/either, >= and =, arithmetic, s/length, s/raw-at and recursion; no new vocabulary or runtime change.",
+      "test_status": "All committed exact-output cases passed on the pinned interpreter; deterministic Python byte reversal supplied expected values. A 200-byte resource probe records the recursion limit."
+    },
+    "notice": "The REBOL reference includes a separate inexact mode and a case-insensitive default; the Glon challenge intentionally implements only the exact case-sensitive byte contract. Both core functions are application-level recursive definitions; source sizes are descriptive, not a concision claim."
+  }
+}

@@ -30,6 +30,7 @@ upstream Markdown and EBNF; it does not maintain divergent handwritten copies.
 | [FizzBuzz](challenges/fizzbuzz/README.md) | Rosetta Code | Modulo rules, 1–100, ten-row recursion | Verified; full 100-line output |
 | [Ackermann Function](challenges/ackermann/README.md) | Rosetta Code | Unoptimized two-argument recursion | Verified for 19/20 table entries; A(3,4) resource fail-stop |
 | [Towers of Hanoi](challenges/hanoi/README.md) | Rosetta Code | Recursive move sequence, 0–10 disks tested | Verified; exact sequence and legal-transfer invariants |
+| [Palindrome Detection](challenges/palindrome/README.md) | Rosetta Code | Exact case-sensitive byte comparison | Verified; 43 cases; recursive-depth probe at 200 bytes |
 | [File Text Replacement](challenges/file-replace/README.md) | REBOL Cookbook | REBOL 2 Cookbook original-path file replace | Verified; optional file module |
 
 Challenges are added one at a time and reviewed before the next is started.
