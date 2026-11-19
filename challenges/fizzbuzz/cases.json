@@ -1,0 +1,58 @@
+{
+  "schema": 1,
+  "challenge": "fizzbuzz",
+  "title": "FizzBuzz",
+  "family": "Rosetta Code",
+  "entry": "rows",
+  "source": "fizzbuzz.glon",
+  "domain": "Integers 1 through 100; the program prints exactly one line per integer.",
+  "description": "Print the numbers 1 to 100, replacing multiples of 3 with Fizz, multiples of 5 with Buzz, and multiples of both with FizzBuzz. The Glon implementation is the posted version, divided into ten-row recursive blocks so the 64K interpreter's activation depth is not exceeded.",
+  "attribution": "Problem and REBOL reference: Rosetta Code, 'FizzBuzz' (https://rosettacode.org/wiki/FizzBuzz). The REBOL listing is the solution shown on that page; the Glon implementation is the posted Glon version.",
+  "reference": "The 100 expected lines are generated independently by Python's integer modulo rules, not by Glon. The full stdout is compared exactly.",
+  "family_note": "Rosetta Code challenge; separate from the REBOL Cookbook file-replacement challenge.",
+  "cases": [
+    {
+      "id": "fizzbuzz-1-100",
+      "call": "rows 0",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n2\nFizz\n4\nBuzz\nFizz\n7\n8\nFizz\nBuzz\n11\nFizz\n13\n14\nFizzBuzz\n16\n17\nFizz\n19\nBuzz\nFizz\n22\n23\nFizz\nBuzz\n26\nFizz\n28\n29\nFizzBuzz\n31\n32\nFizz\n34\nBuzz\nFizz\n37\n38\nFizz\nBuzz\n41\nFizz\n43\n44\nFizzBuzz\n46\n47\nFizz\n49\nBuzz\nFizz\n52\n53\nFizz\nBuzz\n56\nFizz\n58\n59\nFizzBuzz\n61\n62\nFizz\n64\nBuzz\nFizz\n67\n68\nFizz\nBuzz\n71\nFizz\n73\n74\nFizzBuzz\n76\n77\nFizz\n79\nBuzz\nFizz\n82\n83\nFizz\nBuzz\n86\nFizz\n88\n89\nFizzBuzz\n91\n92\nFizz\n94\nBuzz\nFizz\n97\n98\nFizz\nBuzz\n",
+      "reference": "Exact 100-line FizzBuzz output for 1..100, generated independently with Python modulo rules."
+    }
+  ],
+  "resource_probes": [
+    {
+      "id": "direct-row-1-100",
+      "call": "row 1 100",
+      "print": false,
+      "observed": "exit 1; machine halt after about 83 lines (return-stack exhaustion); no SIN!",
+      "note": "Control probe demonstrating why rows are divided into ten-row blocks. It is a resource-limit probe, not a correctness case."
+    }
+  ],
+  "known_limitations": [
+    "A single recursive row over 1..100 reaches about 83 lines and then fail-stops with return-stack exhaustion on the pinned 64K interpreter; this is a machine halt, not a catchable SIN!.",
+    "The posted rows implementation succeeds by dividing the range into ten-row blocks, keeping each row's recursion shallow.",
+    "The program prints exactly 1..100; extending the upper bound is outside this challenge."
+  ],
+  "reference_implementation": {
+    "language": "REBOL 2",
+    "source": "reference.reb",
+    "title": "FizzBuzz \u2014 REBOL solution shown on Rosetta Code",
+    "attribution": "Rosetta Code, FizzBuzz, REBOL solution (https://rosettacode.org/wiki/FizzBuzz).",
+    "url": "https://rosettacode.org/wiki/FizzBuzz",
+    "notes": "Concatenative repeat/case/all implementation with a proper REBOL code header."
+  },
+  "implementation_comparison": {
+    "rebol": {
+      "observable_behaviour": "Prints FizzBuzz, Fizz, Buzz or the number for 1..100.",
+      "facilities": "repeat, copy, case/all, append, mod, mold and print from REBOL 2.",
+      "test_status": "The original listing is preserved verbatim as reference source. It was not executed here; there is no REBOL 2 runtime in this repository."
+    },
+    "glon": {
+      "observable_behaviour": "Prints the same 100 lines; verified exactly against independently generated expected output.",
+      "facilities": "Ordinary Glon func/either, arithmetic/comparison, s/print and print; no new primitive or vocabulary.",
+      "test_status": "1/1 full-output case passed on the pinned interpreter; the direct 100-row probe records the activation-depth limit."
+    },
+    "notice": "Both listings are application-level programs. REBOL iterates with repeat; Glon recurses in ten-row blocks because its bounded activation resources make a single 100-line recursion fail. Source sizes are descriptive, not a concision claim."
+  }
+}

@@ -1,0 +1,17 @@
+;; ackermann.glon -- the two-argument Ackermann function.
+;;
+;; Contract: m and n are nonnegative integers for the tested range.
+;; This is the unoptimized recursive definition: no memoisation and no
+;; closed-form shortcuts. Deep inputs are limited by the interpreter's
+;; activation/return-stack resources; see the challenge README.
+ackermann: func [m n] [
+    either = m 0 [
+        + n 1
+    ] [
+        either = n 0 [
+            ackermann - m 1 1
+        ] [
+            ackermann - m 1 ackermann m - n 1
+        ]
+    ]
+]

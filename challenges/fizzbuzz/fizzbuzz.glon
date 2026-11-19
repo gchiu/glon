@@ -1,0 +1,27 @@
+;; fizzbuzz.glon -- FizzBuzz for 1..100.
+;;
+;; The implementation is the posted Glon version. The only change for the
+;; challenge harness is that the final top-level `rows 0` call is supplied by
+;; the case runner instead of being part of the definitions-only source.
+;;
+;; `rows` divides the 100 lines into ten-row blocks. A single recursive row over
+;; 1..100 reaches about 83 lines and then fail-stops with return-stack
+;; exhaustion on the pinned 64K interpreter; ten-row blocks keep each row's
+;; recursion shallow, and the outer `rows` recursion adds only ten more levels.
+;; See the challenge README and the direct-row resource probe.
+divides?: func [d n] [ = n * d / n d ]
+
+say: func [n] [
+    either divides? 15 n [ s/print "FizzBuzz" ] [
+    either divides? 3 n  [ s/print "Fizz" ] [
+    either divides? 5 n  [ s/print "Buzz" ] [
+    print n ] ] ]
+]
+
+row: func [i last] [
+    either > i last [ none ] [ say i row + i 1 last ]
+]
+
+rows: func [t] [
+    either > t 90 [ none ] [ row + t 1 + t 10 rows + t 10 ]
+]

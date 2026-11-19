@@ -23,15 +23,19 @@ upstream Markdown and EBNF; it does not maintain divergent handwritten copies.
 
 ## Current status
 
-| Challenge | Language surface | Status |
-|---|---|---|
-| [GCD](challenges/gcd/README.md) | Nonnegative integer subtraction Euclid | Verified |
-| [Factorial](challenges/factorial/README.md) | Recursive multiplication, 0!–19! | Verified; overflow at 20! |
-| [File Text Replacement](challenges/file-replace/README.md) | REBOL 2 Cookbook original-path file replace | Verified; optional file module |
+| Challenge | Family | Language surface | Status |
+|---|---|---|---|
+| [GCD](challenges/gcd/README.md) | Rosetta Code | Nonnegative integer subtraction Euclid | Verified |
+| [Factorial](challenges/factorial/README.md) | Rosetta Code | Recursive multiplication, 0!–19! | Verified; overflow at 20! |
+| [FizzBuzz](challenges/fizzbuzz/README.md) | Rosetta Code | Modulo rules, 1–100, ten-row recursion | Verified; full 100-line output |
+| [Ackermann Function](challenges/ackermann/README.md) | Rosetta Code | Unoptimized two-argument recursion | Verified for 19/20 table entries; A(3,4) resource fail-stop |
+| [File Text Replacement](challenges/file-replace/README.md) | REBOL Cookbook | REBOL 2 Cookbook original-path file replace | Verified; optional file module |
 
 Challenges are added one at a time and reviewed before the next is started.
-REBOL Cookbook challenges include the original `reference.reb` listing alongside
-the Glon source; the generated page compares their behaviour and limitations.
+Rosetta Code challenges include the original REBOL listing from the Rosetta Code
+page when one is used; REBOL Cookbook challenges include the original
+`reference.reb` recipe. Both families show the source alongside the Glon
+implementation and compare behaviour and limitations, not concision.
 
 ## Pinned interpreter
 
