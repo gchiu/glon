@@ -18,7 +18,7 @@ rm -rf "$DEST"
 mkdir -p "$(dirname "$DEST")"
 git clone --filter=blob:none --no-checkout "$REPO_URL" "$DEST"
 git -C "$DEST" checkout --detach "$COMMIT"
-make -C "$DEST" glon
+make -C "$DEST" glon MODULES=file
 
 test -x "$DEST/glon" || { echo "build-interpreter: $DEST/glon was not produced" >&2; exit 1; }
 echo "$DEST/glon"

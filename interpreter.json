@@ -1,8 +1,8 @@
 {
   "repository": "https://github.com/gchiu/rebol-substrate-experiment",
-  "commit": "89de40e737b022a0d987093bb6c5b1e8d1a8a83e",
-  "branch": "glon-shop-g1a",
-  "build": "make glon",
+  "commit": "935e9f7584748fb80590660985bba0af851a03fa",
+  "branch": "integration/cookbook-file-replace",
+  "build": "make glon MODULES=file",
   "documentation": {
     "language_reference": "https://gchiu.github.io/glon/language/",
     "grammar": "https://gchiu.github.io/glon/grammar/",

@@ -27,7 +27,7 @@ upstream Markdown and EBNF; it does not maintain divergent handwritten copies.
 |---|---|---|
 | [GCD](challenges/gcd/README.md) | Nonnegative integer subtraction Euclid | Verified |
 | [Factorial](challenges/factorial/README.md) | Recursive multiplication, 0!–19! | Verified; overflow at 20! |
-| [File Text Replacement](challenges/file-replace/README.md) | REBOL 2 Cookbook file replace, in-memory partial | Partial; file I/O blocked |
+| [File Text Replacement](challenges/file-replace/README.md) | REBOL 2 Cookbook original-path file replace | Verified; optional file module |
 
 Challenges are added one at a time and reviewed before the next is started.
 REBOL Cookbook challenges include the original `reference.reb` listing alongside
@@ -39,8 +39,8 @@ the Glon source; the generated page compares their behaviour and limitations.
 
 ```text
 repository: https://github.com/gchiu/rebol-substrate-experiment
-commit:     89de40e737b022a0d987093bb6c5b1e8d1a8a83e
-build:      make glon
+commit:     935e9f7584748fb80590660985bba0af851a03fa
+build:      make glon MODULES=file
 ```
 
 The build target produces the native `glon` CLI plus its `glon-lib/` libraries
@@ -88,12 +88,14 @@ requirements.txt         pinned documentation build dependency
 From the repository root:
 
 ```sh
-scripts/build-interpreter.sh 89de40e737b022a0d987093bb6c5b1e8d1a8a83e .tools/glon-eng
+scripts/build-interpreter.sh 935e9f7584748fb80590660985bba0af851a03fa .tools/glon-eng
 ```
 
 The script clones the engineering repository at the pinned commit and runs
-`make glon`. The resulting CLI is `.tools/glon-eng/glon`; its `glon-lib/`
-directory sits beside it and is loaded automatically.
+`make glon MODULES=file`. The resulting CLI is `.tools/glon-eng/glon`; its
+`glon-lib/` directory sits beside it and is loaded automatically. The optional
+file module is required by the completed file-replacement challenge; other
+challenges continue to run through the same native CLI.
 
 `.tools/` is ignored by Git.
 
@@ -156,12 +158,44 @@ For a REBOL Cookbook challenge, add the original program verbatim as
 }
 ```
 
-An optional `implementation_comparison` object supplies the observable
-behaviour, required facilities and test status for each language. The site
-generator displays the original and Glon listings side by side on desktop and
-stacked on mobile, adds both to the challenge page, and records source sizes
-without implying that the programs are equally concise or that the original
-program was executed. Every reference source must remain byte-for-byte verbatim.
+An optional `implementation_comparison` object supplies the comparison by
+abstraction layer:
+
+```json
+{
+  "implementation_comparison": {
+    "layers": [
+      {
+        "layer": "1. Core operations and primitives",
+        "rebol": "What the reference runtime provides; do not assert provenance without evidence.",
+        "glon": "What the frozen S1/R0 layers provide.",
+        "note": "Comparability note."
+      },
+      {
+        "layer": "2. Mezzanine/library functions",
+        "rebol": "For example: replace is a mezzanine in Oldes' Rebol 3 at src/mezz/mezz-series.reb:129; this does not establish REBOL 2 provenance.",
+        "glon": "The reusable Glon library function and its scope.",
+        "glon_source_size": true,
+        "note": "Library layer, not application equivalent."
+      },
+      {
+        "layer": "3. Application code",
+        "rebol": "The reference application and the facilities it uses.",
+        "glon": "Whether a complete Glon application exists and what is missing.",
+        "rebol_source_size": true,
+        "note": "Application layer; state missing file I/O explicitly."
+      }
+    ],
+    "notice": "Source sizes are factual metadata labelled by layer, not a concision claim."
+  }
+}
+```
+
+The generator displays the original and Glon listings side by side on desktop
+and stacked on mobile, adds both to the challenge page, and puts source-size
+metadata in the layer where it belongs. It must not imply that the programs
+are equally concise or that the original program was executed. Every reference
+source must remain byte-for-byte verbatim.
 
 ## Challenge rules
 

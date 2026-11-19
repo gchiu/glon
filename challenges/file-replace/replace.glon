@@ -1,31 +1,16 @@
-;; replace.glon -- replace ONLY the first occurrence of `old` with `new`.
+;; replace.glon -- REBOL Cookbook recipe 0004 at the original path.
 ;;
-;; PARTIAL CHALLENGE IMPLEMENTATION.
-;; This operates on an in-memory STRING! only. The published native Glon CLI
-;; and language vocabulary do not expose file read/write operations, so the
-;; original REBOL program's file round trip cannot be reproduced here.
+;; The reusable implementation is in the vendored file-replace.glon:
+;;   file/replace-first path old new success failure
+;; It opens the source read-only, writes a unique same-directory temporary,
+;; streams the first-occurrence replacement, and only renames the temporary over
+;; the original after every read/write/close succeeds.  On failure the original
+;; path is not replaced and the temporary is removed where possible.
 ;;
-;; Requires the published optional strings-ext library (s/slice), loaded by the
-;; challenge runner from vendor/strings-ext.glon before this source.
-
-find-first: func [text pattern i text-len pat-len] [
-    either > + i pat-len text-len [
-        -1
-    ] [
-        either s/= s/slice text i pat-len pattern [
-            i
-        ] [
-            find-first text pattern + i 1 text-len pat-len
-        ]
-    ]
-]
-
-replace-first: func [text old new] [
-    index: find-first text old 0 s/length text s/length old
-    either = index -1 [
-        text
-    ] [
-        tail-start: + index s/length old
-        s/+ s/+ s/slice text 0 index new s/slice text tail-start - s/length text tail-start
-    ]
+;; This application is deliberately definitions-only; the challenge runner
+;; appends the case call.  `cookbook/replace-first` is the Cookbook application.
+cookbook/replace-first: func [] [
+    file/replace-first "doc.txt" "web" "rebol"
+        func [done] [ s/print "COOKBOOK_DONE" ]
+        func [error] [ raise error ]
 ]
