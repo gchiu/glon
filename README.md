@@ -31,6 +31,7 @@ upstream Markdown and EBNF; it does not maintain divergent handwritten copies.
 | [Ackermann Function](challenges/ackermann/README.md) | Rosetta Code | Unoptimized two-argument recursion | Verified for 19/20 table entries; A(3,4) resource fail-stop |
 | [Towers of Hanoi](challenges/hanoi/README.md) | Rosetta Code | Recursive move sequence, 0–10 disks tested | Verified; exact sequence and legal-transfer invariants |
 | [Palindrome Detection](challenges/palindrome/README.md) | Rosetta Code | Exact case-sensitive byte comparison | Verified; 43 cases; recursive-depth probe at 200 bytes |
+| [Binary Search](challenges/binary-search/README.md) | Rosetta Code | Recursive search over ascending integer blocks | Verified; 101 cases; 511-element literal block |
 | [File Text Replacement](challenges/file-replace/README.md) | REBOL Cookbook | REBOL 2 Cookbook original-path file replace | Verified; optional file module |
 
 Challenges are added one at a time and reviewed before the next is started.

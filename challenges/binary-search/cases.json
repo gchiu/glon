@@ -1,0 +1,843 @@
+{
+  "schema": 1,
+  "challenge": "binary-search",
+  "title": "Binary Search",
+  "family": "Rosetta Code",
+  "entry": "binary-search",
+  "source": "binary-search.glon",
+  "domain": "A block of integers sorted ascending; the algorithm does not sort or validate ordering.",
+  "description": "Return the zero-based index of a target integer in an ascending block, or -1 when absent. For duplicates any matching index is acceptable. The implementation is the proposed recursive binary search; input blocks are read-only.",
+  "attribution": "Problem definition: Rosetta Code, 'Binary search' (https://rosettacode.org/wiki/Binary_search). The Glon implementation is the proposed version. The referenced Rosetta Code page currently publishes no REBOL solution, so no REBOL listing is invented or included.",
+  "reference": "Expected indices are generated independently with Python bisect_left for sorted unique blocks. Duplicate cases use the acceptance helper binary-search-found and require the returned index to hold the target value, not a particular duplicate index. Input preservation is checked separately.",
+  "family_note": "Rosetta Code challenge; separate from REBOL Cookbook challenges.",
+  "cases": [
+    {
+      "id": "empty",
+      "call": "print binary-search [  ] 1",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Empty block has no matching index."
+    },
+    {
+      "id": "single-present",
+      "call": "print binary-search [ 7 ] 7",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Single-element block, present at index 0."
+    },
+    {
+      "id": "single-absent-lower",
+      "call": "print binary-search [ 7 ] 6",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Single-element block, target below."
+    },
+    {
+      "id": "single-absent-higher",
+      "call": "print binary-search [ 7 ] 8",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Single-element block, target above."
+    },
+    {
+      "id": "two-present-first",
+      "call": "print binary-search [ 4 9 ] 4",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Two-element block, first element."
+    },
+    {
+      "id": "two-present-last",
+      "call": "print binary-search [ 4 9 ] 9",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Two-element block, last element."
+    },
+    {
+      "id": "two-absent-between",
+      "call": "print binary-search [ 4 9 ] 6",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Target between two elements."
+    },
+    {
+      "id": "odd-first",
+      "call": "print binary-search [ 1 3 5 7 9 ] 1",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Odd length, first element."
+    },
+    {
+      "id": "odd-middle",
+      "call": "print binary-search [ 1 3 5 7 9 ] 5",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "2\n",
+      "reference": "Odd length, middle element."
+    },
+    {
+      "id": "odd-last",
+      "call": "print binary-search [ 1 3 5 7 9 ] 9",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "4\n",
+      "reference": "Odd length, last element."
+    },
+    {
+      "id": "even-first",
+      "call": "print binary-search [ 2 4 6 8 ] 2",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Even length, first element."
+    },
+    {
+      "id": "even-middle-left",
+      "call": "print binary-search [ 2 4 6 8 ] 4",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Even length, lower middle element."
+    },
+    {
+      "id": "even-middle-right",
+      "call": "print binary-search [ 2 4 6 8 ] 6",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "2\n",
+      "reference": "Even length, upper middle element."
+    },
+    {
+      "id": "even-last",
+      "call": "print binary-search [ 2 4 6 8 ] 8",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "3\n",
+      "reference": "Even length, last element."
+    },
+    {
+      "id": "missing-between",
+      "call": "print binary-search [ 2 4 6 8 10 ] 7",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Missing value between existing elements."
+    },
+    {
+      "id": "below-range",
+      "call": "print binary-search [ 10 20 30 ] -5",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Target below the entire range."
+    },
+    {
+      "id": "above-range",
+      "call": "print binary-search [ 10 20 30 ] 99",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Target above the entire range."
+    },
+    {
+      "id": "negative-and-zero",
+      "call": "print binary-search [ -10 -3 0 4 12 ] 0",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "2\n",
+      "reference": "Zero present among negative/positive values."
+    },
+    {
+      "id": "negative-present",
+      "call": "print binary-search [ -10 -3 0 4 12 ] -10",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Most negative element at index 0."
+    },
+    {
+      "id": "negative-missing",
+      "call": "print binary-search [ -10 -3 0 4 12 ] -1",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Missing negative target."
+    },
+    {
+      "id": "duplicates-present",
+      "call": "print binary-search-found [ 1 2 2 2 3 4 ] 2",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "2\n",
+      "reference": "Returned index must hold 2; any matching duplicate index is acceptable."
+    },
+    {
+      "id": "duplicates-absent",
+      "call": "print binary-search-found [ 1 2 2 2 3 4 ] 5",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Absent target in a duplicate block."
+    },
+    {
+      "id": "identical-present",
+      "call": "print binary-search-found [ 7 7 7 7 ] 7",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "7\n",
+      "reference": "All elements identical; returned index must hold 7."
+    },
+    {
+      "id": "identical-absent",
+      "call": "print binary-search-found [ 7 7 7 7 ] 8",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "All identical, target absent."
+    },
+    {
+      "id": "random-00-0",
+      "call": "print binary-search [ -470 -455 -430 -422 -411 -395 -383 -302 -288 -244 -233 -207 -197 -88 -72 -48 -15 74 116 205 219 221 243 250 251 268 278 308 309 323 437 496 ] -470",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-00-1",
+      "call": "print binary-search [ -470 -455 -430 -422 -411 -395 -383 -302 -288 -244 -233 -207 -197 -88 -72 -48 -15 74 116 205 219 221 243 250 251 268 278 308 309 323 437 496 ] -15",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "16\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-00-2",
+      "call": "print binary-search [ -470 -455 -430 -422 -411 -395 -383 -302 -288 -244 -233 -207 -197 -88 -72 -48 -15 74 116 205 219 221 243 250 251 268 278 308 309 323 437 496 ] 496",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "31\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-00-3",
+      "call": "print binary-search [ -470 -455 -430 -422 -411 -395 -383 -302 -288 -244 -233 -207 -197 -88 -72 -48 -15 74 116 205 219 221 243 250 251 268 278 308 309 323 437 496 ] -471",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-00-4",
+      "call": "print binary-search [ -470 -455 -430 -422 -411 -395 -383 -302 -288 -244 -233 -207 -197 -88 -72 -48 -15 74 116 205 219 221 243 250 251 268 278 308 309 323 437 496 ] 497",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-00-missing",
+      "call": "print binary-search [ -470 -455 -430 -422 -411 -395 -383 -302 -288 -244 -233 -207 -197 -88 -72 -48 -15 74 116 205 219 221 243 250 251 268 278 308 309 323 437 496 ] -218",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "random-01-0",
+      "call": "print binary-search [ -496 -468 -462 -460 -456 -418 -416 -412 -292 -287 -256 -191 -170 -167 -98 -54 -17 18 23 51 57 116 117 131 138 157 193 221 255 311 312 377 ] -496",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-01-1",
+      "call": "print binary-search [ -496 -468 -462 -460 -456 -418 -416 -412 -292 -287 -256 -191 -170 -167 -98 -54 -17 18 23 51 57 116 117 131 138 157 193 221 255 311 312 377 ] -17",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "16\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-01-2",
+      "call": "print binary-search [ -496 -468 -462 -460 -456 -418 -416 -412 -292 -287 -256 -191 -170 -167 -98 -54 -17 18 23 51 57 116 117 131 138 157 193 221 255 311 312 377 ] 377",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "31\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-01-3",
+      "call": "print binary-search [ -496 -468 -462 -460 -456 -418 -416 -412 -292 -287 -256 -191 -170 -167 -98 -54 -17 18 23 51 57 116 117 131 138 157 193 221 255 311 312 377 ] -497",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-01-4",
+      "call": "print binary-search [ -496 -468 -462 -460 -456 -418 -416 -412 -292 -287 -256 -191 -170 -167 -98 -54 -17 18 23 51 57 116 117 131 138 157 193 221 255 311 312 377 ] 378",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-01-missing",
+      "call": "print binary-search [ -496 -468 -462 -460 -456 -418 -416 -412 -292 -287 -256 -191 -170 -167 -98 -54 -17 18 23 51 57 116 117 131 138 157 193 221 255 311 312 377 ] 73",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "random-02-0",
+      "call": "print binary-search [ -334 -225 -58 117 260 336 370 ] -334",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-02-1",
+      "call": "print binary-search [ -334 -225 -58 117 260 336 370 ] 117",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "3\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-02-2",
+      "call": "print binary-search [ -334 -225 -58 117 260 336 370 ] 370",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "6\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-02-3",
+      "call": "print binary-search [ -334 -225 -58 117 260 336 370 ] -335",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-02-4",
+      "call": "print binary-search [ -334 -225 -58 117 260 336 370 ] 371",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-02-missing",
+      "call": "print binary-search [ -334 -225 -58 117 260 336 370 ] 169",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "random-03-0",
+      "call": "print binary-search [ -498 -472 -466 -454 -432 -423 -402 -398 -397 -395 -390 -386 -360 -355 -339 -338 -336 -330 -324 -320 -310 -306 -304 -292 -264 -233 -230 -227 -216 -198 -194 -184 -163 -158 -154 -148 -140 -134 -118 -106 -102 -93 -89 -87 -85 -54 -37 -29 -8 3 7 11 12 16 28 59 69 80 82 92 95 129 141 146 166 167 177 187 214 218 226 230 259 260 266 268 276 279 295 303 316 331 345 353 361 371 378 388 410 412 420 426 430 446 450 463 467 468 485 492 ] -498",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-03-1",
+      "call": "print binary-search [ -498 -472 -466 -454 -432 -423 -402 -398 -397 -395 -390 -386 -360 -355 -339 -338 -336 -330 -324 -320 -310 -306 -304 -292 -264 -233 -230 -227 -216 -198 -194 -184 -163 -158 -154 -148 -140 -134 -118 -106 -102 -93 -89 -87 -85 -54 -37 -29 -8 3 7 11 12 16 28 59 69 80 82 92 95 129 141 146 166 167 177 187 214 218 226 230 259 260 266 268 276 279 295 303 316 331 345 353 361 371 378 388 410 412 420 426 430 446 450 463 467 468 485 492 ] 7",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "50\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-03-2",
+      "call": "print binary-search [ -498 -472 -466 -454 -432 -423 -402 -398 -397 -395 -390 -386 -360 -355 -339 -338 -336 -330 -324 -320 -310 -306 -304 -292 -264 -233 -230 -227 -216 -198 -194 -184 -163 -158 -154 -148 -140 -134 -118 -106 -102 -93 -89 -87 -85 -54 -37 -29 -8 3 7 11 12 16 28 59 69 80 82 92 95 129 141 146 166 167 177 187 214 218 226 230 259 260 266 268 276 279 295 303 316 331 345 353 361 371 378 388 410 412 420 426 430 446 450 463 467 468 485 492 ] 492",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "99\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-03-3",
+      "call": "print binary-search [ -498 -472 -466 -454 -432 -423 -402 -398 -397 -395 -390 -386 -360 -355 -339 -338 -336 -330 -324 -320 -310 -306 -304 -292 -264 -233 -230 -227 -216 -198 -194 -184 -163 -158 -154 -148 -140 -134 -118 -106 -102 -93 -89 -87 -85 -54 -37 -29 -8 3 7 11 12 16 28 59 69 80 82 92 95 129 141 146 166 167 177 187 214 218 226 230 259 260 266 268 276 279 295 303 316 331 345 353 361 371 378 388 410 412 420 426 430 446 450 463 467 468 485 492 ] -499",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-03-4",
+      "call": "print binary-search [ -498 -472 -466 -454 -432 -423 -402 -398 -397 -395 -390 -386 -360 -355 -339 -338 -336 -330 -324 -320 -310 -306 -304 -292 -264 -233 -230 -227 -216 -198 -194 -184 -163 -158 -154 -148 -140 -134 -118 -106 -102 -93 -89 -87 -85 -54 -37 -29 -8 3 7 11 12 16 28 59 69 80 82 92 95 129 141 146 166 167 177 187 214 218 226 230 259 260 266 268 276 279 295 303 316 331 345 353 361 371 378 388 410 412 420 426 430 446 450 463 467 468 485 492 ] 493",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-03-missing",
+      "call": "print binary-search [ -498 -472 -466 -454 -432 -423 -402 -398 -397 -395 -390 -386 -360 -355 -339 -338 -336 -330 -324 -320 -310 -306 -304 -292 -264 -233 -230 -227 -216 -198 -194 -184 -163 -158 -154 -148 -140 -134 -118 -106 -102 -93 -89 -87 -85 -54 -37 -29 -8 3 7 11 12 16 28 59 69 80 82 92 95 129 141 146 166 167 177 187 214 218 226 230 259 260 266 268 276 279 295 303 316 331 345 353 361 371 378 388 410 412 420 426 430 446 450 463 467 468 485 492 ] -173",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "random-04-0",
+      "call": "print binary-search [ -447 -440 -420 -369 -357 -345 -342 -327 -301 -256 -227 -225 -220 -192 -145 -137 -80 -63 -31 111 144 214 235 256 267 269 271 279 356 417 431 486 ] -447",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-04-1",
+      "call": "print binary-search [ -447 -440 -420 -369 -357 -345 -342 -327 -301 -256 -227 -225 -220 -192 -145 -137 -80 -63 -31 111 144 214 235 256 267 269 271 279 356 417 431 486 ] -80",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "16\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-04-2",
+      "call": "print binary-search [ -447 -440 -420 -369 -357 -345 -342 -327 -301 -256 -227 -225 -220 -192 -145 -137 -80 -63 -31 111 144 214 235 256 267 269 271 279 356 417 431 486 ] 486",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "31\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-04-3",
+      "call": "print binary-search [ -447 -440 -420 -369 -357 -345 -342 -327 -301 -256 -227 -225 -220 -192 -145 -137 -80 -63 -31 111 144 214 235 256 267 269 271 279 356 417 431 486 ] -448",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-04-4",
+      "call": "print binary-search [ -447 -440 -420 -369 -357 -345 -342 -327 -301 -256 -227 -225 -220 -192 -145 -137 -80 -63 -31 111 144 214 235 256 267 269 271 279 356 417 431 486 ] 487",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-04-missing",
+      "call": "print binary-search [ -447 -440 -420 -369 -357 -345 -342 -327 -301 -256 -227 -225 -220 -192 -145 -137 -80 -63 -31 111 144 214 235 256 267 269 271 279 356 417 431 486 ] 222",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "random-05-0",
+      "call": "print binary-search [ -489 -485 -480 -444 -441 -440 -311 -308 -290 -230 -218 -193 -78 -54 -26 -1 61 71 87 93 95 98 199 240 257 267 286 309 326 331 355 420 ] -489",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-05-1",
+      "call": "print binary-search [ -489 -485 -480 -444 -441 -440 -311 -308 -290 -230 -218 -193 -78 -54 -26 -1 61 71 87 93 95 98 199 240 257 267 286 309 326 331 355 420 ] 61",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "16\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-05-2",
+      "call": "print binary-search [ -489 -485 -480 -444 -441 -440 -311 -308 -290 -230 -218 -193 -78 -54 -26 -1 61 71 87 93 95 98 199 240 257 267 286 309 326 331 355 420 ] 420",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "31\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-05-3",
+      "call": "print binary-search [ -489 -485 -480 -444 -441 -440 -311 -308 -290 -230 -218 -193 -78 -54 -26 -1 61 71 87 93 95 98 199 240 257 267 286 309 326 331 355 420 ] -490",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-05-4",
+      "call": "print binary-search [ -489 -485 -480 -444 -441 -440 -311 -308 -290 -230 -218 -193 -78 -54 -26 -1 61 71 87 93 95 98 199 240 257 267 286 309 326 331 355 420 ] 421",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-05-missing",
+      "call": "print binary-search [ -489 -485 -480 -444 -441 -440 -311 -308 -290 -230 -218 -193 -78 -54 -26 -1 61 71 87 93 95 98 199 240 257 267 286 309 326 331 355 420 ] 33",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "random-06-0",
+      "call": "print binary-search [ -498 -438 -406 -343 -290 -264 -261 -240 -203 -142 -140 -127 -120 -82 -74 1 31 32 38 124 136 140 143 226 267 285 308 339 367 368 449 480 ] -498",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-06-1",
+      "call": "print binary-search [ -498 -438 -406 -343 -290 -264 -261 -240 -203 -142 -140 -127 -120 -82 -74 1 31 32 38 124 136 140 143 226 267 285 308 339 367 368 449 480 ] 31",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "16\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-06-2",
+      "call": "print binary-search [ -498 -438 -406 -343 -290 -264 -261 -240 -203 -142 -140 -127 -120 -82 -74 1 31 32 38 124 136 140 143 226 267 285 308 339 367 368 449 480 ] 480",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "31\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-06-3",
+      "call": "print binary-search [ -498 -438 -406 -343 -290 -264 -261 -240 -203 -142 -140 -127 -120 -82 -74 1 31 32 38 124 136 140 143 226 267 285 308 339 367 368 449 480 ] -499",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-06-4",
+      "call": "print binary-search [ -498 -438 -406 -343 -290 -264 -261 -240 -203 -142 -140 -127 -120 -82 -74 1 31 32 38 124 136 140 143 226 267 285 308 339 367 368 449 480 ] 481",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-06-missing",
+      "call": "print binary-search [ -498 -438 -406 -343 -290 -264 -261 -240 -203 -142 -140 -127 -120 -82 -74 1 31 32 38 124 136 140 143 226 267 285 308 339 367 368 449 480 ] -90",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "random-07-0",
+      "call": "print binary-search [ -479 -442 -407 -392 -380 -351 -341 -318 -234 -207 -110 248 328 340 387 ] -479",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-07-1",
+      "call": "print binary-search [ -479 -442 -407 -392 -380 -351 -341 -318 -234 -207 -110 248 328 340 387 ] -318",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "7\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-07-2",
+      "call": "print binary-search [ -479 -442 -407 -392 -380 -351 -341 -318 -234 -207 -110 248 328 340 387 ] 387",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "14\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-07-3",
+      "call": "print binary-search [ -479 -442 -407 -392 -380 -351 -341 -318 -234 -207 -110 248 328 340 387 ] -480",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-07-4",
+      "call": "print binary-search [ -479 -442 -407 -392 -380 -351 -341 -318 -234 -207 -110 248 328 340 387 ] 388",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-07-missing",
+      "call": "print binary-search [ -479 -442 -407 -392 -380 -351 -341 -318 -234 -207 -110 248 328 340 387 ] -396",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "random-08-0",
+      "call": "print binary-search [ -497 -490 -476 -475 -445 -432 -418 -413 -411 -338 -293 -288 -282 -270 -269 -235 -224 -223 -222 -214 -122 -105 -102 -88 -77 -27 -18 -8 3 11 20 41 49 51 69 96 104 114 118 134 135 164 169 172 246 276 287 288 329 342 353 364 378 388 398 404 406 408 412 424 435 462 464 474 ] -497",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-08-1",
+      "call": "print binary-search [ -497 -490 -476 -475 -445 -432 -418 -413 -411 -338 -293 -288 -282 -270 -269 -235 -224 -223 -222 -214 -122 -105 -102 -88 -77 -27 -18 -8 3 11 20 41 49 51 69 96 104 114 118 134 135 164 169 172 246 276 287 288 329 342 353 364 378 388 398 404 406 408 412 424 435 462 464 474 ] 49",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "32\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-08-2",
+      "call": "print binary-search [ -497 -490 -476 -475 -445 -432 -418 -413 -411 -338 -293 -288 -282 -270 -269 -235 -224 -223 -222 -214 -122 -105 -102 -88 -77 -27 -18 -8 3 11 20 41 49 51 69 96 104 114 118 134 135 164 169 172 246 276 287 288 329 342 353 364 378 388 398 404 406 408 412 424 435 462 464 474 ] 474",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "63\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-08-3",
+      "call": "print binary-search [ -497 -490 -476 -475 -445 -432 -418 -413 -411 -338 -293 -288 -282 -270 -269 -235 -224 -223 -222 -214 -122 -105 -102 -88 -77 -27 -18 -8 3 11 20 41 49 51 69 96 104 114 118 134 135 164 169 172 246 276 287 288 329 342 353 364 378 388 398 404 406 408 412 424 435 462 464 474 ] -498",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-08-4",
+      "call": "print binary-search [ -497 -490 -476 -475 -445 -432 -418 -413 -411 -338 -293 -288 -282 -270 -269 -235 -224 -223 -222 -214 -122 -105 -102 -88 -77 -27 -18 -8 3 11 20 41 49 51 69 96 104 114 118 134 135 164 169 172 246 276 287 288 329 342 353 364 378 388 398 404 406 408 412 424 435 462 464 474 ] 475",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-08-missing",
+      "call": "print binary-search [ -497 -490 -476 -475 -445 -432 -418 -413 -411 -338 -293 -288 -282 -270 -269 -235 -224 -223 -222 -214 -122 -105 -102 -88 -77 -27 -18 -8 3 11 20 41 49 51 69 96 104 114 118 134 135 164 169 172 246 276 287 288 329 342 353 364 378 388 398 404 406 408 412 424 435 462 464 474 ] 92",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "random-09-0",
+      "call": "print binary-search [ -485 -463 -447 -252 -238 -228 -12 -11 -10 73 118 144 171 175 311 337 ] -485",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-09-1",
+      "call": "print binary-search [ -485 -463 -447 -252 -238 -228 -12 -11 -10 73 118 144 171 175 311 337 ] -10",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "8\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-09-2",
+      "call": "print binary-search [ -485 -463 -447 -252 -238 -228 -12 -11 -10 73 118 144 171 175 311 337 ] 337",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "15\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-09-3",
+      "call": "print binary-search [ -485 -463 -447 -252 -238 -228 -12 -11 -10 73 118 144 171 175 311 337 ] -486",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-09-4",
+      "call": "print binary-search [ -485 -463 -447 -252 -238 -228 -12 -11 -10 73 118 144 171 175 311 337 ] 338",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-09-missing",
+      "call": "print binary-search [ -485 -463 -447 -252 -238 -228 -12 -11 -10 73 118 144 171 175 311 337 ] 81",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "random-10-0",
+      "call": "print binary-search [ -460 -239 290 ] -460",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-10-1",
+      "call": "print binary-search [ -460 -239 290 ] -239",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-10-2",
+      "call": "print binary-search [ -460 -239 290 ] 290",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "2\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-10-3",
+      "call": "print binary-search [ -460 -239 290 ] -461",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-10-4",
+      "call": "print binary-search [ -460 -239 290 ] 291",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-10-missing",
+      "call": "print binary-search [ -460 -239 290 ] 241",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "random-11-0",
+      "call": "print binary-search [ -415 -412 -324 -308 -293 -242 -225 -206 -91 -70 66 116 241 246 388 489 ] -415",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-11-1",
+      "call": "print binary-search [ -415 -412 -324 -308 -293 -242 -225 -206 -91 -70 66 116 241 246 388 489 ] -91",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "8\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-11-2",
+      "call": "print binary-search [ -415 -412 -324 -308 -293 -242 -225 -206 -91 -70 66 116 241 246 388 489 ] 489",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "15\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-11-3",
+      "call": "print binary-search [ -415 -412 -324 -308 -293 -242 -225 -206 -91 -70 66 116 241 246 388 489 ] -416",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-11-4",
+      "call": "print binary-search [ -415 -412 -324 -308 -293 -242 -225 -206 -91 -70 66 116 241 246 388 489 ] 490",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block; expected index from Python bisect_left."
+    },
+    {
+      "id": "random-11-missing",
+      "call": "print binary-search [ -415 -412 -324 -308 -293 -242 -225 -206 -91 -70 66 116 241 246 388 489 ] 137",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Deterministic sorted unique block with an absent middle-range target."
+    },
+    {
+      "id": "large-511-0",
+      "call": "print binary-search [ 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78 80 82 84 86 88 90 92 94 96 98 100 102 104 106 108 110 112 114 116 118 120 122 124 126 128 130 132 134 136 138 140 142 144 146 148 150 152 154 156 158 160 162 164 166 168 170 172 174 176 178 180 182 184 186 188 190 192 194 196 198 200 202 204 206 208 210 212 214 216 218 220 222 224 226 228 230 232 234 236 238 240 242 244 246 248 250 252 254 256 258 260 262 264 266 268 270 272 274 276 278 280 282 284 286 288 290 292 294 296 298 300 302 304 306 308 310 312 314 316 318 320 322 324 326 328 330 332 334 336 338 340 342 344 346 348 350 352 354 356 358 360 362 364 366 368 370 372 374 376 378 380 382 384 386 388 390 392 394 396 398 400 402 404 406 408 410 412 414 416 418 420 422 424 426 428 430 432 434 436 438 440 442 444 446 448 450 452 454 456 458 460 462 464 466 468 470 472 474 476 478 480 482 484 486 488 490 492 494 496 498 500 502 504 506 508 510 512 514 516 518 520 522 524 526 528 530 532 534 536 538 540 542 544 546 548 550 552 554 556 558 560 562 564 566 568 570 572 574 576 578 580 582 584 586 588 590 592 594 596 598 600 602 604 606 608 610 612 614 616 618 620 622 624 626 628 630 632 634 636 638 640 642 644 646 648 650 652 654 656 658 660 662 664 666 668 670 672 674 676 678 680 682 684 686 688 690 692 694 696 698 700 702 704 706 708 710 712 714 716 718 720 722 724 726 728 730 732 734 736 738 740 742 744 746 748 750 752 754 756 758 760 762 764 766 768 770 772 774 776 778 780 782 784 786 788 790 792 794 796 798 800 802 804 806 808 810 812 814 816 818 820 822 824 826 828 830 832 834 836 838 840 842 844 846 848 850 852 854 856 858 860 862 864 866 868 870 872 874 876 878 880 882 884 886 888 890 892 894 896 898 900 902 904 906 908 910 912 914 916 918 920 922 924 926 928 930 932 934 936 938 940 942 944 946 948 950 952 954 956 958 960 962 964 966 968 970 972 974 976 978 980 982 984 986 988 990 992 994 996 998 1000 1002 1004 1006 1008 1010 1012 1014 1016 1018 1020 ] 0",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "0\n",
+      "reference": "Largest tested literal block (511 elements), near the parser block/form limit."
+    },
+    {
+      "id": "large-511-1",
+      "call": "print binary-search [ 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78 80 82 84 86 88 90 92 94 96 98 100 102 104 106 108 110 112 114 116 118 120 122 124 126 128 130 132 134 136 138 140 142 144 146 148 150 152 154 156 158 160 162 164 166 168 170 172 174 176 178 180 182 184 186 188 190 192 194 196 198 200 202 204 206 208 210 212 214 216 218 220 222 224 226 228 230 232 234 236 238 240 242 244 246 248 250 252 254 256 258 260 262 264 266 268 270 272 274 276 278 280 282 284 286 288 290 292 294 296 298 300 302 304 306 308 310 312 314 316 318 320 322 324 326 328 330 332 334 336 338 340 342 344 346 348 350 352 354 356 358 360 362 364 366 368 370 372 374 376 378 380 382 384 386 388 390 392 394 396 398 400 402 404 406 408 410 412 414 416 418 420 422 424 426 428 430 432 434 436 438 440 442 444 446 448 450 452 454 456 458 460 462 464 466 468 470 472 474 476 478 480 482 484 486 488 490 492 494 496 498 500 502 504 506 508 510 512 514 516 518 520 522 524 526 528 530 532 534 536 538 540 542 544 546 548 550 552 554 556 558 560 562 564 566 568 570 572 574 576 578 580 582 584 586 588 590 592 594 596 598 600 602 604 606 608 610 612 614 616 618 620 622 624 626 628 630 632 634 636 638 640 642 644 646 648 650 652 654 656 658 660 662 664 666 668 670 672 674 676 678 680 682 684 686 688 690 692 694 696 698 700 702 704 706 708 710 712 714 716 718 720 722 724 726 728 730 732 734 736 738 740 742 744 746 748 750 752 754 756 758 760 762 764 766 768 770 772 774 776 778 780 782 784 786 788 790 792 794 796 798 800 802 804 806 808 810 812 814 816 818 820 822 824 826 828 830 832 834 836 838 840 842 844 846 848 850 852 854 856 858 860 862 864 866 868 870 872 874 876 878 880 882 884 886 888 890 892 894 896 898 900 902 904 906 908 910 912 914 916 918 920 922 924 926 928 930 932 934 936 938 940 942 944 946 948 950 952 954 956 958 960 962 964 966 968 970 972 974 976 978 980 982 984 986 988 990 992 994 996 998 1000 1002 1004 1006 1008 1010 1012 1014 1016 1018 1020 ] 510",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "255\n",
+      "reference": "Largest tested literal block (511 elements), near the parser block/form limit."
+    },
+    {
+      "id": "large-511-2",
+      "call": "print binary-search [ 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78 80 82 84 86 88 90 92 94 96 98 100 102 104 106 108 110 112 114 116 118 120 122 124 126 128 130 132 134 136 138 140 142 144 146 148 150 152 154 156 158 160 162 164 166 168 170 172 174 176 178 180 182 184 186 188 190 192 194 196 198 200 202 204 206 208 210 212 214 216 218 220 222 224 226 228 230 232 234 236 238 240 242 244 246 248 250 252 254 256 258 260 262 264 266 268 270 272 274 276 278 280 282 284 286 288 290 292 294 296 298 300 302 304 306 308 310 312 314 316 318 320 322 324 326 328 330 332 334 336 338 340 342 344 346 348 350 352 354 356 358 360 362 364 366 368 370 372 374 376 378 380 382 384 386 388 390 392 394 396 398 400 402 404 406 408 410 412 414 416 418 420 422 424 426 428 430 432 434 436 438 440 442 444 446 448 450 452 454 456 458 460 462 464 466 468 470 472 474 476 478 480 482 484 486 488 490 492 494 496 498 500 502 504 506 508 510 512 514 516 518 520 522 524 526 528 530 532 534 536 538 540 542 544 546 548 550 552 554 556 558 560 562 564 566 568 570 572 574 576 578 580 582 584 586 588 590 592 594 596 598 600 602 604 606 608 610 612 614 616 618 620 622 624 626 628 630 632 634 636 638 640 642 644 646 648 650 652 654 656 658 660 662 664 666 668 670 672 674 676 678 680 682 684 686 688 690 692 694 696 698 700 702 704 706 708 710 712 714 716 718 720 722 724 726 728 730 732 734 736 738 740 742 744 746 748 750 752 754 756 758 760 762 764 766 768 770 772 774 776 778 780 782 784 786 788 790 792 794 796 798 800 802 804 806 808 810 812 814 816 818 820 822 824 826 828 830 832 834 836 838 840 842 844 846 848 850 852 854 856 858 860 862 864 866 868 870 872 874 876 878 880 882 884 886 888 890 892 894 896 898 900 902 904 906 908 910 912 914 916 918 920 922 924 926 928 930 932 934 936 938 940 942 944 946 948 950 952 954 956 958 960 962 964 966 968 970 972 974 976 978 980 982 984 986 988 990 992 994 996 998 1000 1002 1004 1006 1008 1010 1012 1014 1016 1018 1020 ] 1020",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "510\n",
+      "reference": "Largest tested literal block (511 elements), near the parser block/form limit."
+    },
+    {
+      "id": "large-511-3",
+      "call": "print binary-search [ 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78 80 82 84 86 88 90 92 94 96 98 100 102 104 106 108 110 112 114 116 118 120 122 124 126 128 130 132 134 136 138 140 142 144 146 148 150 152 154 156 158 160 162 164 166 168 170 172 174 176 178 180 182 184 186 188 190 192 194 196 198 200 202 204 206 208 210 212 214 216 218 220 222 224 226 228 230 232 234 236 238 240 242 244 246 248 250 252 254 256 258 260 262 264 266 268 270 272 274 276 278 280 282 284 286 288 290 292 294 296 298 300 302 304 306 308 310 312 314 316 318 320 322 324 326 328 330 332 334 336 338 340 342 344 346 348 350 352 354 356 358 360 362 364 366 368 370 372 374 376 378 380 382 384 386 388 390 392 394 396 398 400 402 404 406 408 410 412 414 416 418 420 422 424 426 428 430 432 434 436 438 440 442 444 446 448 450 452 454 456 458 460 462 464 466 468 470 472 474 476 478 480 482 484 486 488 490 492 494 496 498 500 502 504 506 508 510 512 514 516 518 520 522 524 526 528 530 532 534 536 538 540 542 544 546 548 550 552 554 556 558 560 562 564 566 568 570 572 574 576 578 580 582 584 586 588 590 592 594 596 598 600 602 604 606 608 610 612 614 616 618 620 622 624 626 628 630 632 634 636 638 640 642 644 646 648 650 652 654 656 658 660 662 664 666 668 670 672 674 676 678 680 682 684 686 688 690 692 694 696 698 700 702 704 706 708 710 712 714 716 718 720 722 724 726 728 730 732 734 736 738 740 742 744 746 748 750 752 754 756 758 760 762 764 766 768 770 772 774 776 778 780 782 784 786 788 790 792 794 796 798 800 802 804 806 808 810 812 814 816 818 820 822 824 826 828 830 832 834 836 838 840 842 844 846 848 850 852 854 856 858 860 862 864 866 868 870 872 874 876 878 880 882 884 886 888 890 892 894 896 898 900 902 904 906 908 910 912 914 916 918 920 922 924 926 928 930 932 934 936 938 940 942 944 946 948 950 952 954 956 958 960 962 964 966 968 970 972 974 976 978 980 982 984 986 988 990 992 994 996 998 1000 1002 1004 1006 1008 1010 1012 1014 1016 1018 1020 ] 511",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Largest tested literal block (511 elements), near the parser block/form limit."
+    },
+    {
+      "id": "large-511-4",
+      "call": "print binary-search [ 0 2 4 6 8 10 12 14 16 18 20 22 24 26 28 30 32 34 36 38 40 42 44 46 48 50 52 54 56 58 60 62 64 66 68 70 72 74 76 78 80 82 84 86 88 90 92 94 96 98 100 102 104 106 108 110 112 114 116 118 120 122 124 126 128 130 132 134 136 138 140 142 144 146 148 150 152 154 156 158 160 162 164 166 168 170 172 174 176 178 180 182 184 186 188 190 192 194 196 198 200 202 204 206 208 210 212 214 216 218 220 222 224 226 228 230 232 234 236 238 240 242 244 246 248 250 252 254 256 258 260 262 264 266 268 270 272 274 276 278 280 282 284 286 288 290 292 294 296 298 300 302 304 306 308 310 312 314 316 318 320 322 324 326 328 330 332 334 336 338 340 342 344 346 348 350 352 354 356 358 360 362 364 366 368 370 372 374 376 378 380 382 384 386 388 390 392 394 396 398 400 402 404 406 408 410 412 414 416 418 420 422 424 426 428 430 432 434 436 438 440 442 444 446 448 450 452 454 456 458 460 462 464 466 468 470 472 474 476 478 480 482 484 486 488 490 492 494 496 498 500 502 504 506 508 510 512 514 516 518 520 522 524 526 528 530 532 534 536 538 540 542 544 546 548 550 552 554 556 558 560 562 564 566 568 570 572 574 576 578 580 582 584 586 588 590 592 594 596 598 600 602 604 606 608 610 612 614 616 618 620 622 624 626 628 630 632 634 636 638 640 642 644 646 648 650 652 654 656 658 660 662 664 666 668 670 672 674 676 678 680 682 684 686 688 690 692 694 696 698 700 702 704 706 708 710 712 714 716 718 720 722 724 726 728 730 732 734 736 738 740 742 744 746 748 750 752 754 756 758 760 762 764 766 768 770 772 774 776 778 780 782 784 786 788 790 792 794 796 798 800 802 804 806 808 810 812 814 816 818 820 822 824 826 828 830 832 834 836 838 840 842 844 846 848 850 852 854 856 858 860 862 864 866 868 870 872 874 876 878 880 882 884 886 888 890 892 894 896 898 900 902 904 906 908 910 912 914 916 918 920 922 924 926 928 930 932 934 936 938 940 942 944 946 948 950 952 954 956 958 960 962 964 966 968 970 972 974 976 978 980 982 984 986 988 990 992 994 996 998 1000 1002 1004 1006 1008 1010 1012 1014 1016 1018 1020 ] 2048",
+      "print": false,
+      "expected_exit": 0,
+      "expected_stdout": "-1\n",
+      "reference": "Largest tested literal block (511 elements), near the parser block/form limit."
+    }
+  ],
+  "resource_probes": [],
+  "known_limitations": [
+    "The referenced Rosetta Code Binary search page has no published REBOL solution as of retrieval; none is fabricated here.",
+    "The algorithm assumes ascending sorted input; ordering validation is outside the contract.",
+    "The largest literal block tested is 511 elements, near the parser block/form limit; larger blocks would need construction outside a literal and were not pursued as a capacity investigation.",
+    "Binary search uses O(log n) recursive activation depth; no resource limit was encountered in the tested range."
+  ],
+  "implementation_comparison": {
+    "rebol": {
+      "observable_behaviour": "No REBOL implementation is published on the referenced Rosetta Code page as of retrieval.",
+      "facilities": "Not applicable.",
+      "test_status": "No REBOL reference source is included because there is no published listing to preserve; inventing one would misrepresent the source."
+    },
+    "glon": {
+      "observable_behaviour": "Returns a zero-based matching index or -1 for a sorted integer block; duplicates may return any matching index.",
+      "facilities": "Ordinary Glon func/either, comparison, arithmetic, block-len, block-at and recursion; no new block operations or acceleration.",
+      "test_status": "All committed cases passed on the pinned interpreter; duplicate and input-preservation checks were also performed locally."
+    },
+    "notice": "No REBOL comparison is claimed because the referenced page has no REBOL solution. The Glon implementation is compared with an independent Python reference at the algorithm level."
+  }
+}
